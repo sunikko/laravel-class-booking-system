@@ -88,4 +88,58 @@ These integrations are documented but not fully implemented in this refactored v
 
 ## Status
 
-This project is under active development and focuses on design-first implementation.
+This project focuses on design-first implementation and iterative refinement.
+
+---
+
+## [Booking Flow](docs/diagrams/booking-flow.md)
+
+```mermaid
+flowchart TD
+    A[Student enters booking page] --> B{Has active booking?}
+
+    B -- Yes --> C[Prompt to cancel existing booking]
+    C --> A
+
+    B -- No --> D[View and filter class sessions<hr/>
+    Subject, Center, Date range: 2 weeks]
+
+    D --> E[Select class sessions<hr/>
+    Validation applied:<br/>
+    No time overlap<br/>
+    No duplicate subject]
+
+    E --> F[Review booking]
+    F --> G[Submit booking]
+
+    G --> H{Capacity available?}
+
+    H -- Yes --> I[Create booking: confirmed]
+    H -- No --> J[Create booking: waiting]
+
+    I --> K[Send notifications]
+    J --> K
+
+    K --> L[End]
+
+```
+
+---
+
+## [Booking Status Lifecycle](docs/diagrams/booking-state.md)
+
+This document describes the lifecycle and state transitions of a booking entity.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Pending : Submit booking
+
+    Pending --> Confirmed : Capacity available
+    Pending --> Waiting : Capacity full
+
+    Confirmed --> Cancelled : Student cancels booking
+    Waiting --> Cancelled : Student cancels booking
+
+    Cancelled --> [*]
+
+```

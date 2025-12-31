@@ -33,5 +33,5 @@ classDiagram
 
     Student "1" --> "N" Booking
     ClassSession "1" --> "N" Booking
-
+    Teacher "1" --> "N" ClassSession
 ```

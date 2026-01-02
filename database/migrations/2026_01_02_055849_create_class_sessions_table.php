@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('class_sessions', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
-            $table->foreignId('teacher_id')->constrained();
+            $table->foreignId('teacher_id')->nullable();
             $table->integer('max_students');
             $table->dateTime('start_at');
             $table->dateTime('end_at');

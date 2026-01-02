@@ -6,7 +6,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
-class BookingTrasactionTest extends TestCase
+use App\Models\Student;
+use App\Models\ClassSession;
+use App\Services\BookingService;
+
+class BookingTransactionTest extends TestCase
 {
     use RefreshDatabase;
     /**
@@ -21,7 +25,7 @@ class BookingTrasactionTest extends TestCase
      * - Booking logic is handled at the service layer
      * - A booking is marked as confirmed when capacity is not exceeded
      */
-    public function it_comfirms_booking_when_capacity_is_available(): void
+    public function test_it_confirms_booking_when_capacity_is_available(): void
     {
         // given: a student
         $student = Student::factory()->create();

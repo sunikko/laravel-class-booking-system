@@ -1,25 +1,48 @@
 ## Booking Transaction Test Cases
 
-### TC-01: Student with active booking cannot submit new booking
+### ✅ TC-00: Successful booking when capacity is available (Happy Path)
 
-- Given: Student has confirmed booking
-- When: Submit new booking request
-- Then: API returns 409 ACTIVE_BOOKING_EXISTS
+-   Given:
+-   Student has no active booking
+-   Class session has available capacity for the selected date
+-   When:
+-   Student submits a booking request for the class session and date
+-   Then:
+-   Booking is created successfully
+-   Booking status is set to CONFIRMED
 
-### TC-02: Capacity exceeded results in waiting status
+### ✅ TC-02: Successful booking across multiple centers
 
-- Given: Class capacity full
-- When: Booking submitted
-- Then: Booking created with WAITING status
+-   Given: Valid class sessions from different centers
+-   When: Booking request is submitted
+-   Then: Booking is accepted with travel-time warning shown
+-   And: Status is CONFIRMED or WAITING depending on capacity
 
-### TC-03: Concurrent booking requests for last slot
+---
 
-- Given: Capacity = 1
-- When: Two transactions submit simultaneously
-- Then: One CONFIRMED, one WAITING
+### ❌ TC-03: Duplicate active booking rejected
 
-### TC-04: Partial invalid class selection
+-   Given:
+-   Student has an existing booking with status CONFIRMED or WAITING
+-   Booking is for the same student (regardless of class/date)
 
-- Given: One valid, one conflicting session
-- When: Booking submitted
-- Then: Request rejected, no booking persisted
+-   When:
+-   Student submits a new booking request
+
+-   Then:
+-   API responds with HTTP 409 Conflict
+-   Response code is ACTIVE_BOOKING_EXISTS
+-   No additional booking record is created in the database
+
+### ❌ TC-04: Capacity exceeded results in waiting
+
+-   Given: Class capacity is full
+-   When: Booking request is submitted
+-   Then: Booking is created with WAITING status
+
+### ❌ TC-05: Concurrent booking requests
+
+-   Given: Capacity = 1
+-   When: Two requests submit simultaneously
+-   Then: One booking is CONFIRMED
+-   And: The other is WAITING

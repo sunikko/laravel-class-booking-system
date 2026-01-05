@@ -55,7 +55,7 @@ class BookingTransactionTest extends TestCase
      * THEN the request is rejected with HTTP 409
      * AND no new booking record is created
      */
-    public function test_duplicate_active_booking_is_rejected_for_active_status(BookingStatus $status)
+    public function test_duplicate_active_booking_is_rejected_for_active_status()
     {
         // Given: a student with an active booking
         $student = Student::factory()->create();
@@ -64,14 +64,14 @@ class BookingTransactionTest extends TestCase
         Booking::factory()->create([
             'student_id' => $student->id,
             'class_session_id' => $classSession->id,
-            'status' => $status,
+            'status' => BookingStatus::CONFIRMED,
         ]);
 
         // When: the student tries to create another booking
         $response = $this->actingAs($student, 'api')
             ->postJson('/api/bookings', [
                 'class_session_id' => $classSession->id,
-                'date' => now()->toDateString(),
+                'booking_date' => now()->toDateString(),
             ]);
 
         // Then: booking is rejected

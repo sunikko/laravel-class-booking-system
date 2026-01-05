@@ -22,8 +22,28 @@ class BookingController extends Controller
     public function store(Request $request, BookingService $bookingService)
     {
         try {
+            $user = auth()->user();
+            $student = $user->student;
+
+            if (! $student) {
+                return response()->json([
+                    'code' => 'STUDENT_NOT_FOUND',
+                ], 403);
+            }
+
+            if ($bookingService->hasActiveBooking($student)) {
+                return response()->json([
+                    'code' => 'ACTIVE_BOOKING_EXISTS',
+                ], 409);
+            }
+
+            $student = auth()->user()->student;
+            if (! $student) {
+                abort(403, 'Student profile not found');
+            }
+
             $bookingService->createBooking(
-                auth()->user(),
+                $student,
                 $request->input('class_session_id'),
                 $request->input('booking_date')
             );

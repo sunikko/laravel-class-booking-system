@@ -23,14 +23,7 @@ class BookingService
      */
     public function createBooking(Student $student, int $classSessionId, string $date): void
     {
-        $hasActiveBooking = Booking::where('student_id', $student->id)
-            ->whereIn('status', [
-                BookingStatus::CONFIRMED,
-                BookingStatus::WAITING,
-            ])
-            ->exists();
-
-        if ($hasActiveBooking) {
+        if ($this->hasActiveBooking($student)) {
             throw new DomainException('ACTIVE_BOOKING_EXISTS');
         }
 
@@ -69,5 +62,16 @@ class BookingService
             'booking_date' => $date,
             'status' => 'confirmed',
         ]);
+    }
+
+
+    public function hasActiveBooking(Student $student): bool
+    {
+        return Booking::where('student_id', $student->id)
+            ->whereIn('status', [
+                BookingStatus::CONFIRMED,
+                BookingStatus::WAITING,
+            ])
+            ->exists();
     }
 }

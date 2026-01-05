@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;
 
+use App\Models\User;
 use App\Models\Student;
 use App\Models\ClassSession;
 use App\Services\BookingService;
@@ -58,7 +59,10 @@ class BookingTransactionTest extends TestCase
     public function test_duplicate_active_booking_is_rejected_for_active_status()
     {
         // Given: a student with an active booking
-        $student = Student::factory()->create();
+        $user = User::factory()->create();
+        $student = Student::factory()->create([
+            'user_id' => $user->id,
+        ]);
         $classSession = ClassSession::factory()->create();
 
         Booking::factory()->create([
@@ -68,7 +72,7 @@ class BookingTransactionTest extends TestCase
         ]);
 
         // When: the student tries to create another booking
-        $response = $this->actingAs($student, 'api')
+        $response = $this->actingAs($user)
             ->postJson('/api/bookings', [
                 'class_session_id' => $classSession->id,
                 'booking_date' => now()->toDateString(),

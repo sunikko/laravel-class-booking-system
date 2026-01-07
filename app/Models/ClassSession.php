@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Enums\BookingStatus;
 
 class ClassSession extends Model
 {
@@ -22,4 +23,14 @@ class ClassSession extends Model
     {
         return $this->hasMany(Booking::class);
     }
+
+    public function hasCapacity(): bool
+    {
+        $confirmedCount = $this->bookings()
+            ->where('status', BookingStatus::CONFIRMED)
+            ->count();
+
+        return $confirmedCount < $this->max_students;
+    }
+
 }

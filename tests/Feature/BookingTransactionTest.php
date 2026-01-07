@@ -95,4 +95,54 @@ class BookingTransactionTest extends TestCase
             [BookingStatus::WAITING],
         ];
     }
+
+
+    /**
+    * Given
+    * - class_session capacity = 1
+    * - already confirmed booking 1 exists for the class_session
+    * 
+    * When
+    * -  another student requests booking for the same class_session
+    * 
+    * Then
+    * - booking is created
+    * - status = WAITING
+    */
+    public function test_capacity_exceeded_results_in_waiting()
+    {
+        // Given
+        $classSession = ClassSession::factory()->create([
+            'max_students' => 1,
+        ]);
+
+        $existingStudent = Student::factory()->create();
+        Booking::factory()->create([
+            'student_id' => $existingStudent->id,
+            'class_session_id' => $classSession->id,
+            'status' => BookingStatus::CONFIRMED,
+        ]);
+
+        $newUser = User::factory()->create();
+        $newStudent = Student::factory()->create([
+            'user_id' => $newUser->id,
+        ]);
+
+        // When
+        $response = $this->actingAs($newUser)
+            ->postJson('/api/bookings', [
+                'class_session_id' => $classSession->id,
+                'booking_date' => now()->toDateString(),
+            ]);
+
+        // Then
+        $response->assertStatus(201);
+
+        $this->assertDatabaseHas('bookings', [
+            'student_id' => $newStudent->id,
+            'class_session_id' => $classSession->id,
+            'status' => BookingStatus::WAITING,
+        ]);
+    }
+
 }

@@ -145,4 +145,61 @@ class BookingTransactionTest extends TestCase
         ]);
     }
 
+    /**
+     * Given
+     * - class_session capacity = 1
+     * - already confirmed booking 1 exists for the class_session
+     * - waiting booking 2 exists for the class_session
+     * 
+     * When
+     * - confirmed booking 1 is cancelled
+     * 
+     * Then
+     * - waiting booking 2 is promoted to confirmed
+     */
+    public function test_waiting_booking_is_promoted_when_confirmed_booking_is_cancelled()
+    {
+        // Given
+        $classSession = ClassSession::factory()->create([
+            'max_students' => 1,
+        ]);
+
+        $confirmedStudent = Student::factory()->create();
+        $confirmedBooking = Booking::factory()->create([
+            'student_id' => $confirmedStudent->id,
+            'class_session_id' => $classSession->id,
+            'status' => BookingStatus::CONFIRMED,
+        ]);
+
+        $waitingStudent = Student::factory()->create();
+        $waitingBooking = Booking::factory()->create([
+            'student_id' => $waitingStudent->id,
+            'class_session_id' => $classSession->id,
+            'status' => BookingStatus::WAITING,
+        ]);
+
+        // When
+        $bookingService = app(BookingService::class);
+        $bookingService->cancelBooking($confirmedBooking);
+
+        // Then
+        $this->assertDatabaseHas('bookings', [
+            'id' => $confirmedBooking->id,
+            'status' => BookingStatus::CANCELLED,
+        ]);
+
+        $this->assertDatabaseHas('bookings', [
+            'id' => $waitingBooking->id,
+            'status' => BookingStatus::CONFIRMED,
+        ]);
+
+        $this->assertEquals(
+            1,
+            Booking::where('class_session_id', $classSession->id)
+                ->where('status', BookingStatus::CONFIRMED)
+                ->count()
+        );
+    }
+
+
 }

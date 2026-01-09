@@ -74,4 +74,30 @@ class BookingService
             ])
             ->exists();
     }
+
+    public function cancelBooking(Booking $booking): void
+    {
+        $wasConfirmed = $booking->status === BookingStatus::CONFIRMED;
+
+        $booking->update([
+            'status' => BookingStatus::CANCELLED,
+        ]);
+
+        // Handle promotion logic for confirmed cancellations only
+        if (! $wasConfirmed) {
+            return;
+        }
+
+        $nextWaitingBooking = Booking::where('class_session_id', $booking->class_session_id)
+            ->where('status', BookingStatus::WAITING)
+            ->orderBy('created_at')
+            ->first();
+
+        if ($nextWaitingBooking) {
+            $nextWaitingBooking->update([
+                'status' => BookingStatus::CONFIRMED,
+            ]);
+        }
+    }
+
 }

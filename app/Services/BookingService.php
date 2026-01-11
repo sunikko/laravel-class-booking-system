@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\DB;
 use App\Models\Booking;
 use App\Models\ClassSession;
 use App\Models\Student;
@@ -77,27 +78,15 @@ class BookingService
 
     public function cancelBooking(Booking $booking): void
     {
-        $wasConfirmed = $booking->status === BookingStatus::CONFIRMED;
+        DB::transaction(function () use ($booking) { // lockForUpdate()
+            $wasConfirmed = $booking->isConfirmed();
 
-        $booking->update([
-            'status' => BookingStatus::CANCELLED,
-        ]);
+            $booking->cancel();
 
-        // Handle promotion logic for confirmed cancellations only
-        if (! $wasConfirmed) {
-            return;
-        }
-
-        $nextWaitingBooking = Booking::where('class_session_id', $booking->class_session_id)
-            ->where('status', BookingStatus::WAITING)
-            ->orderBy('created_at')
-            ->first();
-
-        if ($nextWaitingBooking) {
-            $nextWaitingBooking->update([
-                'status' => BookingStatus::CONFIRMED,
-            ]);
-        }
+            if ($wasConfirmed) {
+                $booking->classSession->promoteNextWaitingBooking();
+            }
+        }); //commit / rollback → auto unlock
     }
 
 }

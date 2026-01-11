@@ -18,7 +18,6 @@ class ClassSession extends Model
         'end_at',
         'status',
     ];
-
     public function bookings()
     {
         return $this->hasMany(Booking::class);
@@ -32,5 +31,26 @@ class ClassSession extends Model
 
         return $confirmedCount < $this->max_students;
     }
+
+    public function waitingBookings()
+    {
+        return $this->bookings()
+            ->where('status', BookingStatus::WAITING)
+            ->orderBy('created_at');
+    }
+
+    public function promoteNextWaitingBooking(): void
+    {
+        $next = $this->waitingBookings()
+            ->lockForUpdate()
+            ->first();
+
+        if (! $next) {
+            return;
+        }
+
+        $next->confirm();
+    }
+
 
 }

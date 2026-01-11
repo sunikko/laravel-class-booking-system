@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Enums\BookingStatus;
 
 class Booking extends Model
 {
@@ -25,4 +26,24 @@ class Booking extends Model
     {
         return $this->belongsTo(ClassSession::class);
     }
+
+    public function confirm(): void
+    {
+        $this->update([
+            'status' => BookingStatus::CONFIRMED,
+        ]);
+    }
+
+    public function cancel(): void
+    {
+        $this->update([
+            'status' => BookingStatus::CANCELLED,
+        ]);
+    }
+
+    public function isConfirmed(): bool
+    {
+        return $this->status === BookingStatus::CONFIRMED;
+    }
+
 }

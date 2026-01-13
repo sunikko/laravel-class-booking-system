@@ -47,7 +47,7 @@ class BookingTransactionTest extends TestCase
         );
 
         // then: booking is confirmed
-        $this->assertEquals('confirmed', $booking->status);
+        $this->assertEquals(BookingStatus::CONFIRMED, $booking->status);
     }
 
     /**
@@ -179,18 +179,20 @@ class BookingTransactionTest extends TestCase
         ]);
 
         // When
-        $bookingService = app(BookingService::class);
-        $bookingService->cancelBooking($confirmedBooking);
+        $response = $this->actingAs($confirmedStudent->user)
+    ->deleteJson("/api/bookings/{$confirmedBooking->id}");
 
         // Then
+        $response->assertNoContent();
+
         $this->assertDatabaseHas('bookings', [
             'id' => $confirmedBooking->id,
-            'status' => BookingStatus::CANCELLED,
+            'status' => BookingStatus::CANCELLED->value,
         ]);
 
         $this->assertDatabaseHas('bookings', [
             'id' => $waitingBooking->id,
-            'status' => BookingStatus::CONFIRMED,
+            'status' => BookingStatus::CONFIRMED->value,
         ]);
 
         $this->assertEquals(

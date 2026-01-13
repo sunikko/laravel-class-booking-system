@@ -17,6 +17,11 @@ class Booking extends Model
         'status',
     ];
 
+    protected $casts = [
+        'status' => BookingStatus::class,
+        'booking_date' => 'date',
+    ];
+
     public function student()
     {
         return $this->belongsTo(Student::class);

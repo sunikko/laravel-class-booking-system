@@ -61,7 +61,7 @@ class BookingService
             'student_id' => $student->id,
             'class_session_id' => $classSessionIds[0],
             'booking_date' => $date,
-            'status' => 'confirmed',
+            'status' => BookingStatus::CONFIRMED,
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Services\BookingService;
+use App\Models\Booking;
 
 class BookingController extends Controller
 {
@@ -78,8 +79,10 @@ class BookingController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Booking $booking, BookingService $bookingService)
     {
-        //
+        $bookingService->cancelBooking($booking);
+
+        return response()->noContent();
     }
 }

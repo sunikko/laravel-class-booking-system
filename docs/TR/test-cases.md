@@ -51,6 +51,7 @@
     The waiting booking was created earlier than others (oldest)
 -   When:
     The confirmed booking is cancelled
+    Student A calls DELETE /api/bookings/{booking_id}
 -   Then:
     The cancelled booking status becomes CANCELLED
     The oldest waiting booking is:
@@ -62,7 +63,33 @@
     Promotion happens automatically when capacity becomes available
     Only one waiting booking is promoted per cancellation
 
-### ❌ TC-06: Concurrent booking requests
+### ❌ TC-06: Cancelling a non-confirmed booking does not promote waiting bookings
+
+-   Given:
+    A class session exists
+    A booking exists with status WAITING
+    There is no CONFIRMED booking for the class session
+-   When:
+    The WAITING booking is cancelled
+-   Then:
+    The booking status is updated to CANCELLED
+    No WAITING booking is promoted to CONFIRMED
+    No other booking status is changed
+
+### ❌ TC-07: Cancelling confirmed booking when no waiting booking exists
+
+-   Given:
+    A class session exists with capacity of 1
+    A booking exists with status CONFIRMED
+    There are no WAITING bookings for the class session
+-   When:
+    The CONFIRMED booking is cancelled
+-   Then:
+    The booking status is updated to CANCELLED
+    No booking is promoted to CONFIRMED
+    The system completes the operation without error
+
+### ❌ TC-X: Concurrent booking requests (Out of scope)
 
 -   Given: Capacity = 1
 -   When: Two requests submit simultaneously

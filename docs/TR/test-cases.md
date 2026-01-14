@@ -63,18 +63,19 @@
     Promotion happens automatically when capacity becomes available
     Only one waiting booking is promoted per cancellation
 
-### ❌ TC-06: Cancelling a non-confirmed booking does not promote waiting bookings
+### TC-06: Cancelling a WAITING booking does not promote other waiting bookings
 
 -   Given:
-    A class session exists
-    A booking exists with status WAITING
-    There is no CONFIRMED booking for the class session
+    A class session exists with capacity = 1
+    Booking 1 has status CONFIRMED
+    Booking 2 has status WAITING
 -   When:
-    The WAITING booking is cancelled
+    Booking 2 (WAITING) is cancelled
 -   Then:
-    The booking status is updated to CANCELLED
-    No WAITING booking is promoted to CONFIRMED
-    No other booking status is changed
+    Booking 2 status becomes CANCELLED
+    Booking 1 remains CONFIRMED
+    No promotion occurs
+    Total confirmed bookings remains 1
 
 ### ❌ TC-07: Cancelling confirmed booking when no waiting booking exists
 

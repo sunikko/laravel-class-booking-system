@@ -204,4 +204,76 @@ class BookingTransactionTest extends TestCase
     }
 
 
+    /**
+     * Given
+     * - class_session capacity = 1
+     * - already confirmed booking 1 exists for the class_session
+     * - waiting booking 2 exists for the class_session
+     * 
+     * When
+     * - waiting booking 2 is cancelled
+     * 
+     * Then
+     * - confirmed booking 1 remains confirmed
+     * - no promotion occurs
+     */
+    public function test_cancelling_waiting_booking_does_not_trigger_promotion()
+    {
+        // Given
+        $classSession = ClassSession::factory()->create([
+            'max_students' => 1,
+        ]);
+
+        $confirmedStudent = Student::factory()->create();
+        $waitingStudent = Student::factory()->create();
+
+        $confirmedBooking = Booking::factory()->create([
+            'student_id' => $confirmedStudent->id,
+            'class_session_id' => $classSession->id,
+            'status' => BookingStatus::CONFIRMED,
+        ]);
+
+        $waitingBooking = Booking::factory()->create([
+            'student_id' => $waitingStudent->id,
+            'class_session_id' => $classSession->id,
+            'status' => BookingStatus::WAITING,
+        ]);
+
+        // When
+        $response = $this->actingAs($waitingStudent->user)
+            ->deleteJson("/api/bookings/{$waitingBooking->id}");
+
+        // Then
+        $response->assertNoContent();
+
+        $this->assertEquals(
+            BookingStatus::CANCELLED,
+            $waitingBooking->fresh()->status
+        );
+
+        $this->assertEquals(
+            BookingStatus::CONFIRMED,
+            $confirmedBooking->fresh()->status
+        );
+
+        $this->assertDatabaseHas('bookings', [
+            'id' => $waitingBooking->id,
+            'status' => BookingStatus::CANCELLED->value,
+        ]);
+
+        $this->assertDatabaseHas('bookings', [
+            'id' => $confirmedBooking->id,
+            'status' => BookingStatus::CONFIRMED->value,
+        ]);
+
+        $this->assertEquals(
+            1,
+            Booking::where('class_session_id', $classSession->id)
+                ->where('status', BookingStatus::CONFIRMED)
+                ->count(),
+            'Should still have exactly 1 confirmed booking'
+        );
+    }
+
+
 }

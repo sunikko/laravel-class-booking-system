@@ -276,4 +276,45 @@ class BookingTransactionTest extends TestCase
     }
 
 
+    /**
+     * Given
+     * - class_session capacity = 1
+     * - already confirmed booking 1 exists for the class_session
+     * - no waiting bookings exist for the class_session
+     * 
+     * When
+     * - confirmed booking 1 is cancelled via API
+     * 
+     * Then
+     * - booking 1 status is set to CANCELLED
+     * - no other bookings are promoted
+     */
+    public function test_cancelling_confirmed_booking_with_no_waiting_booking_via_api()
+    {
+        // Given
+        $session = ClassSession::factory()->create([
+            'max_students' => 1,
+        ]);
+        $confirmedStudent = Student::factory()->create();
+        $booking = Booking::factory()->create([
+            'student_id' => $confirmedStudent->id,
+            'class_session_id' => $session->id,
+            'status' => BookingStatus::CONFIRMED,
+        ]);
+
+        // When
+        $response = $this->actingAs($confirmedStudent->user)
+        ->postJson(route('bookings.cancel', $booking->id));
+
+        // Then
+        $response->assertOk();
+
+        $this->assertDatabaseHas('bookings', [
+            'id' => $booking->id,
+            'status' => BookingStatus::CANCELLED->value,
+        ]);
+
+        $this->assertEquals(0, Booking::where('status', BookingStatus::CONFIRMED)->count());
+    }
+
 }

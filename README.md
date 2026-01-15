@@ -15,10 +15,10 @@ This project revisits the same booking problem with the goal of designing a more
 
 ## Design Goals
 
-- Manage booking-related business logic and validation consistently with a server-centric approach.
-- Use client-side validation only as a supplementary aid for user experience.
-- Design a booking flow that guarantees data consistency even under concurrent requests.
-- Prioritize clear design documentation and decision rationale over implementation details.
+-   Manage booking-related business logic and validation consistently with a server-centric approach.
+-   Use client-side validation only as a supplementary aid for user experience.
+-   Design a booking flow that guarantees data consistency even under concurrent requests.
+-   Prioritize clear design documentation and decision rationale over implementation details.
 
 ---
 
@@ -52,30 +52,32 @@ This decision simplifies state management and ensures booking consistency.
 
 ## System Overview
 
-- Students can browse and filter class sessions by subject and center
-- Bookings are allowed within a two-week window
-- Multiple centers can be selected with travel time considerations
-- Full classes result in waiting list bookings
-- Students must cancel existing bookings before submitting a new booking request
+-   Students can browse and filter class sessions by subject and center
+-   Bookings are allowed within a two-week window
+-   Multiple centers can be selected with travel time considerations
+-   Full classes result in waiting list bookings
+-   Students must cancel existing bookings before submitting a new booking request
 
 ---
 
 ## Documentation
 
-- [Use Cases](docs/UseCases.md)
-- [Functional Requirements](docs/FR.md)
-- [Technical Requirements](docs/TR.md)
-- [ERD Diagram](docs/diagrams/erd.md)
+-   [Use Cases](docs/UseCases.md)
+-   [Functional Requirements](docs/FR.md)
+-   [Technical Requirements](docs/TR.md)
+-   [ERD Diagram](docs/diagrams/erd.md)
 
 ---
 
 ## Technology Stack
 
-- Backend: Laravel
-- Frontend: Blade + JavaScript
-- Database: MySQL
-- Testing: PHPUnit (planned)
-- API design: Documentation of RESTful endpoint design (TR.md)
+-   Backend: Laravel
+-   Frontend: Blade + JavaScript
+-   Database:
+    -   SQLite (development & automated tests)
+    -   MySQL (production-oriented design)
+-   Testing: PHPUnit (planned)
+-   API design: Documentation of RESTful endpoint design (TR.md)
 
 ---
 

@@ -7,9 +7,10 @@ with a focus on concurrency handling and data consistency.
 
 ## Goals
 
-- Prevent overbooking under concurrent requests
-- Guarantee atomic booking creation
-- Ensure deterministic booking status assignment
+-   Prevent overbooking under concurrent requests
+-   Guarantee atomic booking creation
+-   Ensure deterministic booking status assignment
+-   Ensure booking decisions are made per `(class_session_id + date)`
 
 ---
 
@@ -17,7 +18,8 @@ with a focus on concurrency handling and data consistency.
 
 All booking submissions are processed within a single database transaction.
 
-The transaction starts when a booking submission request is received
+The transaction starts when a booking submission request
+containing selected class sessions and target dates is received,
 and ends after booking records are successfully persisted or rolled back.
 
 ---
@@ -26,8 +28,8 @@ and ends after booking records are successfully persisted or rolled back.
 
 1. Begin database transaction
 2. Lock target class session rows
-3. Validate current booking count
-4. Determine booking status
+3. Validate current booking count per `(class_session_id + date)`
+4. Determine booking status for the selected date
 5. Create booking records
 6. Commit transaction
 
@@ -35,16 +37,16 @@ and ends after booking records are successfully persisted or rolled back.
 
 ## Concurrency Strategy
 
-- Pessimistic locking is applied to `class_sessions` rows
-- `SELECT ... FOR UPDATE` is used to prevent race conditions
-- Capacity is validated only after acquiring the lock
+-   Pessimistic locking is applied to `class_sessions` rows
+-   `SELECT ... FOR UPDATE` is used to prevent race conditions
+-   Capacity is validated only after acquiring the lock
 
 ---
 
 ## Pseudocode (Laravel-Oriented)
 
 ```php
-DB::transaction(function () use ($student, $selectedSessions) {
+DB::transaction(function () use ($student, $selectedSessions, $bookingDate) {
 
     foreach ($selectedSessions as $sessionId) {
 
@@ -53,42 +55,43 @@ DB::transaction(function () use ($student, $selectedSessions) {
             ->first();
 
         $currentCount = Booking::where('class_session_id', $session->id)
+            ->where('booking_date', $bookingDate)
             ->whereIn('status', ['confirmed', 'waiting'])
             ->count();
 
-        if ($currentCount < $session->max_students) {
-            $status = 'confirmed';
-        } else {
-            $status = 'waiting';
-        }
+        $status = $currentCount < $session->max_students
+            ? 'confirmed'
+            : 'waiting';
 
         Booking::create([
             'student_id' => $student->id,
             'class_session_id' => $session->id,
+            'booking_date' => $bookingDate,
             'status' => $status,
         ]);
     }
 
 });
+
 ```
 
 ---
 
 ## Failure Handling
 
-- If any validation fails, the transaction is rolled back
+-   If any validation fails, the transaction is rolled back
 
-- No partial booking data is persisted
+-   No partial booking data is persisted
 
-- The client receives a failure response and may retry
+-   The client receives a failure response and may retry
 
 ---
 
 ## Notes
 
-- No locking occurs during intermediate UI steps
+-   No locking occurs during intermediate UI steps
 
-- Concurrency is handled only at submission time
+-   Concurrency is handled only at submission time
 
 ```mermaid
 flowchart TD
@@ -129,10 +132,10 @@ All failures result in a full transaction rollback unless explicitly noted.
 
 ## Transaction Guarantees
 
-- No partial bookings are persisted
-- All booking decisions occur inside a single database transaction
-- Race conditions are resolved deterministically
-- System state remains consistent under concurrent requests
+-   No partial bookings are persisted
+-   All booking decisions occur inside a single database transaction
+-   Race conditions are resolved deterministically
+-   System state remains consistent under concurrent requests
 
 ## Design Rationale
 

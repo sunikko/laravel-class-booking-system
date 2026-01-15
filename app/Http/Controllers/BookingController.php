@@ -76,16 +76,6 @@ class BookingController extends Controller
         //
     }
 
-    public function cancel(Booking $booking, BookingService $bookingService)
-    {
-        $bookingService->cancelBooking($booking);
-
-        return response()->json([
-            'message' => 'Booking cancelled successfully',
-        ]);
-    }
-
-
     /**
      * Remove the specified resource from storage.
      */

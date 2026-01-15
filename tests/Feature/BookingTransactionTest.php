@@ -304,10 +304,10 @@ class BookingTransactionTest extends TestCase
 
         // When
         $response = $this->actingAs($confirmedStudent->user)
-        ->postJson(route('bookings.cancel', $booking->id));
+            ->deleteJson(route('bookings.destroy', $booking->id));
 
         // Then
-        $response->assertOk();
+        $response->assertNoContent();
 
         $this->assertDatabaseHas('bookings', [
             'id' => $booking->id,

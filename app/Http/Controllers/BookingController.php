@@ -14,7 +14,13 @@ class BookingController extends Controller
      */
     public function index()
     {
-        //
+        $user = auth()->user();
+
+        if (! $user || ! $user->student) {
+            return response()->json([]);
+        }
+
+        return Booking::where('student_id', $user->student->id)->get();
     }
 
     /**
@@ -30,17 +36,6 @@ class BookingController extends Controller
                 return response()->json([
                     'code' => 'STUDENT_NOT_FOUND',
                 ], 403);
-            }
-
-            if ($bookingService->hasActiveBooking($student)) {
-                return response()->json([
-                    'code' => 'ACTIVE_BOOKING_EXISTS',
-                ], 409);
-            }
-
-            $student = auth()->user()->student;
-            if (! $student) {
-                abort(403, 'Student profile not found');
             }
 
             $bookingService->createBooking(

@@ -16,13 +16,21 @@ class ClassSessionFactory extends Factory
      */
     public function definition()
     {
-        $start = $this->faker->dateTimeBetween('+1 days', '+1 week');
+        $startDate = now()->addDays(3)->startOfWeek();
 
         return [
-            'max_students' => 10,
-            'start_at' => $start,
-            'end_at' => (clone $start)->modify('+1 hour'),
-            'status' => 'open',
+            'class_name'    => $this->faker->words(2, true),
+            'class_subject' => $this->faker->randomElement(['Math', 'English', 'Science']),
+            'day_of_week'   => $this->faker->randomElement([
+                'monday', 'tuesday', 'wednesday', 'thursday', 'friday'
+            ]),
+            'max_students'  => $this->faker->numberBetween(1, 5),
+            'start_date'    => $startDate->toDateString(),
+            'end_date'      => $startDate->copy()->addWeeks(4)->toDateString(),
+            'start_time'    => '18:00',
+            'duration_min'  => 60,
+
+            'status'        => 'open',
         ];
     }
 

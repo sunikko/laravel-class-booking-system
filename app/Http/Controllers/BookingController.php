@@ -19,8 +19,9 @@ class BookingController extends Controller
         if (! $user || ! $user->student) {
             return response()->json([]);
         }
-
-        return Booking::where('student_id', $user->student->id)->get();
+        return Booking::with('classSession')
+            ->where('student_id', $user->student->id)
+            ->get();
     }
 
     /**

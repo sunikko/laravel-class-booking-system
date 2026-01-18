@@ -49,6 +49,10 @@
 
 </div>
 
+<h2 class="text-xl font-semibold mb-4">Weekly Schedule</h2>
+
+<div class="grid grid-cols-5 gap-4" id="calendar"></div>
+
 <script>
 const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
@@ -156,6 +160,133 @@ function renderBookingTable() {
     });
 }
 
+/* ================= Calendar ================= */
+const DAYS = [
+    { key: 'monday', label: 'Monday' },
+    { key: 'tuesday', label: 'Tuesday' },
+    { key: 'wednesday', label: 'Wednesday' },
+    { key: 'thursday', label: 'Thursday' },
+    { key: 'friday', label: 'Friday' },
+];
+
+function getNextTwoWeeks() {
+    const days = [];
+    const today = new Date();
+
+    for (let i = 0; i < 14; i++) {
+        const d = new Date(today);
+        d.setDate(today.getDate() + i);
+
+        // Mon–Fri만
+        if (d.getDay() >= 1 && d.getDay() <= 5) {
+            days.push(d);
+        }
+    }
+    return days;
+}
+
+function getBookedSessionIds() {
+    return new Set(
+        state.bookings
+            .filter(b => b.status === 'confirmed')
+            .map(b => b.class_session_id)
+    );
+}
+
+function getConfirmedBookingMap() {
+    const map = {};
+    state.bookings
+        .filter(b => b.status === 'confirmed')
+        .forEach(b => {
+            map[b.class_session_id] = true;
+        });
+    return map;
+}
+
+function renderSessionsIntoCalendar(days) {
+    const bookedSessionIds = getBookedSessionIds();
+    const hasBookingThisWeek = state.bookings.some(
+        b => b.status === 'confirmed'
+    );
+
+    days.forEach(date => {
+        const dateKey = date.toISOString().slice(0, 10);
+        const dayOfWeek = date
+            .toLocaleDateString('en-GB', { weekday: 'long' })
+            .toLowerCase(); // monday
+
+        const container = document.getElementById(`day-${dateKey}`);
+        if (!container) return;
+
+        state.sessions
+            .filter(s => s.day_of_week === dayOfWeek)
+            .forEach(s => {
+                const isFull = s.booked_count >= s.max_students;
+                const isBooked = bookedSessionIds.has(s.id);
+                const disabled = isFull || isBooked || hasBookingThisWeek;
+
+                const card = document.createElement('div');
+                card.className = `
+                    p-2 border rounded text-sm
+                    ${isBooked ? 'bg-blue-100' : isFull ? 'bg-gray-200' : 'bg-green-100'}
+                `;
+
+                card.innerHTML = `
+                    <div class="font-semibold">${s.class_name}</div>
+                    <div>${s.start_time} (${s.duration_min}m)</div>
+                    <div class="text-xs mt-1">
+                        ${s.booked_count} / ${s.max_students}
+                        ${isFull ? '<span class="text-red-500 ml-1">FULL</span>' : ''}
+                    </div>
+                    ${
+                        isBooked
+                            ? `<div class="mt-2 text-blue-700 text-xs font-semibold">Booked</div>`
+                            : disabled
+                                ? `<button class="mt-2 w-full bg-gray-400 text-white py-1 rounded" disabled>
+                                     Not available
+                                   </button>`
+                                : `<button
+                                       onclick="bookSession(${s.id})"
+                                       class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white py-1 rounded">
+                                       Book
+                                   </button>`
+                    }
+                `;
+
+                container.appendChild(card);
+            });
+    });
+}
+
+function renderCalendar() {
+    const container = document.getElementById('calendar');
+    container.innerHTML = '';
+
+    const days = getNextTwoWeeks();
+
+    days.forEach(date => {
+        const dateKey = date.toISOString().slice(0, 10); // YYYY-MM-DD
+        const dayName = date.toLocaleDateString('en-GB', { weekday: 'short' });
+
+        const col = document.createElement('div');
+        col.className = 'border rounded p-2';
+
+        col.innerHTML = `
+            <div class="font-bold text-center">
+                ${dayName}<br/>
+                <span class="text-xs">${dateKey}</span>
+            </div>
+            <div class="space-y-2 mt-2" id="day-${dateKey}"></div>
+        `;
+
+        container.appendChild(col);
+    });
+
+    renderSessionsIntoCalendar(days);
+}
+
+
+
 /* ================= Init ================= */
 
 async function init() {
@@ -166,6 +297,7 @@ async function init() {
 
     renderSessionTable();
     renderBookingTable();
+    renderCalendar();
 }
 
 init();

@@ -12,7 +12,7 @@ class ClassSession extends Model
     /** @use HasFactory<\Database\Factories\ClassSessionFactory> */
     use HasFactory;
 
-     protected $fillable = [
+    protected $fillable = [
         'teacher_id',
         'class_name',
         'class_subject',
@@ -60,9 +60,8 @@ class ClassSession extends Model
 
     public function startDateTime(): Carbon
     {
-        return Carbon::parse(
-            "{$this->start_date} {$this->start_time}"
-        );
+        return Carbon::parse($this->start_date)
+            ->setTimeFromTimeString($this->start_time);
     }
 
     public function endDateTime(): Carbon
@@ -71,5 +70,4 @@ class ClassSession extends Model
             ->copy()
             ->addMinutes($this->duration_min);
     }
-
 }

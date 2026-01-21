@@ -31,9 +31,8 @@ class BookingService
 
         $classSession = ClassSession::findOrFail($classSessionId);
 
-        $newStart = Carbon::parse(
-            $classSession->start_date . ' ' . $classSession->start_time
-        );
+        $newStart = Carbon::parse($classSession->start_date)
+            ->setTimeFromTimeString($classSession->start_time);
 
         $newEnd = $newStart->copy()->addMinutes($classSession->duration_min);
 
@@ -42,8 +41,8 @@ class BookingService
         }
 
         $status = $classSession->hasCapacity()
-        ? BookingStatus::CONFIRMED
-        : BookingStatus::WAITING;
+            ? BookingStatus::CONFIRMED
+            : BookingStatus::WAITING;
 
         Booking::create([
             'student_id' => $student->id,
@@ -77,7 +76,7 @@ class BookingService
     }
 
 
-    
+
     /**
      * Checks if a student has an active booking for a specific class session.
      *
@@ -142,6 +141,4 @@ class BookingService
 
         return false;
     }
-
 }
-

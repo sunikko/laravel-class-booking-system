@@ -48,7 +48,6 @@ class BookingController extends Controller
             return response()->json([
                 'message' => 'Booking created',
             ], Response::HTTP_CREATED);
-
         } catch (\DomainException $e) {
             return response()->json([
                 'code' => $e->getMessage(),

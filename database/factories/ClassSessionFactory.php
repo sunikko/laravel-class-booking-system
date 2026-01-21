@@ -2,36 +2,45 @@
 
 namespace Database\Factories;
 
+use App\Models\ClassSession;
+use App\Models\Teacher;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Carbon\Carbon;
 
-/**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ClassSession>
- */
 class ClassSessionFactory extends Factory
 {
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
-    public function definition()
+    protected $model = ClassSession::class;
+
+    public function definition(): array
     {
-        $startDate = now()->addDays(3)->startOfWeek();
+        $start = Carbon::instance(
+            $this->faker->dateTimeBetween('+1 day', '+1 month')
+        );
+
+
+        $startTimes = [
+            '09:00',
+            '10:00',
+            '11:00',
+            '13:00',
+            '14:00',
+            '15:00',
+            '16:00',
+        ];
 
         return [
-            'class_name'    => $this->faker->words(2, true),
+            'class_name' => $this->faker->randomElement(['Tom', 'Jake', 'Chris', 'Anna', 'Jane']) . "'s Class",
             'class_subject' => $this->faker->randomElement(['Math', 'English', 'Science']),
-            'day_of_week'   => $this->faker->randomElement([
-                'monday', 'tuesday', 'wednesday', 'thursday', 'friday'
-            ]),
-            'max_students'  => $this->faker->numberBetween(1, 5),
-            'start_date'    => $startDate->toDateString(),
-            'end_date'      => $startDate->copy()->addWeeks(4)->toDateString(),
-            'start_time'    => '18:00',
-            'duration_min'  => 60,
 
-            'status'        => 'open',
+            'start_date' => $start,
+            'end_date'   => $start->copy()->addWeeks(4),
+
+            'day_of_week' => $start->isoWeekday(),
+
+            'start_time' => $this->faker->randomElement($startTimes),
+            'duration_min' => 60,
+            'max_students' => $this->faker->numberBetween(3, 8),
+            'status' => 'active',
         ];
     }
-
 }

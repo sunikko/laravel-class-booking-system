@@ -103,7 +103,6 @@
             8: 'same time slot is already booked.'
         };
 
-
         const COLORS = {
             english: "border-l-4 border-sky-400",
             math: "border-l-4 border-rose-400",
@@ -114,7 +113,15 @@
         const CARD_STATE_STYLE = {
             booked: 'bg-gray-200 opacity-60',
             conflict: 'bg-yellow-50 opacity-60',
-            full: 'bg-gray-100 opacity-70'
+            full: 'bg-gray-100 opacity-70',
+            normal: 'bg-white'
+        };
+
+        const STATUS_LABEL = {
+            booked: '✓ BOOKED',
+            conflict: '⚠ CONFLICT',
+            subject: '⚠ SAME SUBJECT BOOKED',
+            full: 'FULL'
         };
 
 
@@ -178,9 +185,16 @@
         /* ================= HELPERS ================= */
         const subjectColor = s => COLORS[s?.toLowerCase()] || COLORS.default;
 
-        const isBooked = id =>
-            state.bookings.some(b => b.class_session_id === id && b.status === 'CONFIRMED');
+        // 통합된 예약 체크 함수 (날짜 옵션 포함)
+        function isSessionBooked(sessionId, date = null) {
+            return state.bookings.some(b =>
+                b.class_session_id == sessionId &&
+                b.status === 'CONFIRMED' &&
+                (!date || b.booking_date === date)
+            );
+        }
 
+        // 같은 시간대에 다른 수업이 예약되어 있는지 체크
         function hasConflict(session) {
             return state.bookings.some(b => {
                 if (b.status !== 'CONFIRMED') return false;
@@ -210,32 +224,8 @@
             });
         }
 
-        /* ================= UI ================= */
-        document.querySelectorAll('.booking-radio').forEach(rb => {
-            rb.addEventListener('click', function() {
-                if (this.dataset.wasChecked === 'true') {
-                    this.checked = false;
-                    this.dataset.wasChecked = 'false';
-                    updateSelectedSummary();
-                } else {
-                    document.querySelectorAll('.booking-radio').forEach(r => {
-                        r.dataset.wasChecked = 'false';
-                    });
-                    this.dataset.wasChecked = 'true';
-                }
-            });
-
-            rb.addEventListener('change', handleRadioChange);
-        });
-
-        function isSessionAlreadyBooked(sessionId) {
-            return state.bookings.some(
-                b => b.class_session_id == sessionId && b.status === 'CONFIRMED'
-            );
-        }
-
-        function createCard(session) {
-            const booked = isBooked(session.id);
+        function getCardState(session) {
+            const anyDateBooked = isSessionBooked(session.id); // 아무 날짜든 예약되었는지
             const conflict = hasConflict(session);
             const full = session.booked_count >= session.max_students;
 
@@ -246,21 +236,46 @@
                 .filter(Boolean)
             );
             const subjectBooked = bookedSubjects.has(session.class_subject);
-            const isDisabled = booked || conflict || full;
+
+            const isDisabled = anyDateBooked || conflict || full;
+
+            let styleClass = CARD_STATE_STYLE.normal;
+            if (anyDateBooked || conflict) {
+                styleClass = CARD_STATE_STYLE.booked;
+            } else if (full) {
+                styleClass = CARD_STATE_STYLE.full;
+            }
+
+            let statusMessage = '';
+            if (anyDateBooked) statusMessage = STATUS_LABEL.booked;
+            else if (conflict) statusMessage = STATUS_LABEL.conflict;
+            else if (subjectBooked) statusMessage = STATUS_LABEL.subject;
+            else if (full) statusMessage = STATUS_LABEL.full;
+
+            return {
+                anyDateBooked,
+                conflict,
+                full,
+                subjectBooked,
+                isDisabled,
+                styleClass,
+                statusMessage
+            };
+        }
+
+        /* ================= UI ================= */
+        function createCard(session) {
+            const cardState = getCardState(session);
+            const dates = nextDates(session);
 
             const card = document.createElement('div');
-            // card.className = `class-card ${subjectColor(session.class_subject)} text-white rounded p-3 mb-2 text-sm`;
             card.className = `
-                    class-card text-gray-800 
-                    ${subjectColor(session.class_subject)}
-                    rounded p-3 mb-2 text-sm shadow-sm
-                `;
-
-            const dates = nextDates(session);
-            const bookedDates = state.bookings
-                .filter(b => b.class_session_id === session.id && b.status === 'CONFIRMED')
-                .map(b => b.booking_date);
-            const sessionBooked = isSessionAlreadyBooked(session.id);
+                class-card text-gray-800 
+                ${subjectColor(session.class_subject)}
+                rounded p-3 mb-2 text-sm shadow-sm
+                ${cardState.styleClass}
+                ${cardState.isDisabled ? 'disabled' : ''}
+            `;
 
             card.innerHTML = `
                 <div class="font-bold">${session.class_subject || 'Class'}</div>
@@ -268,52 +283,36 @@
 
                 <div class="mt-2 text-xs space-y-1">
                     ${dates.map(d => {
-                        const dateStr = d.toISOString().slice(0,10);
-                        const bookedDatesSet = new Set(bookedDates);
-                        const isDateBooked = bookedDatesSet.has(dateStr);
+                        const dateStr = d.toISOString().slice(0, 10);
+                        const isThisDateBooked = isSessionBooked(session.id, dateStr);
+                        
+                        const canBook = !cardState.isDisabled && !isThisDateBooked;
                         
                         return `
-                                <label class="flex items-center gap-1
-                                ${(!isDisabled && !isDateBooked && !sessionBooked)
-                                    ? `"><input 
-                                        type="radio"
-                                        name="session${session.id}"
-                                        class="booking-radio"
+                            <label class="flex items-center gap-1 ${!canBook ? 'text-gray-400' : ''}">
+                                <input 
+                                    type="radio"
+                                    name="session${session.id}"
+                                    class="booking-radio"
+                                    ${canBook ? '' : 'disabled'}
+                                    ${canBook ? `
                                         data-id="${session.id}"
                                         data-date="${dateStr}"
                                         data-subject="${session.class_subject || 'Class'}"
                                         data-classname="${session.class_name}"
-                                    >`
-                                    : ` text-gray-400}"><input 
-                                        type="radio"
-                                        class="booking-radio"
-                                        disabled
-                                    >`
-                                }
-                                    ${d.toLocaleDateString()}
-                                    ${sessionBooked ? '<span class="ml-1 font-bold">✓</span>' : ''}
-                                </label>
-                            `}).join('')}
-                        </div>
+                                    ` : ''}
+                                >
+                                ${d.toLocaleDateString()}
+                                ${isThisDateBooked ? '<span class="ml-1 font-bold">✓</span>' : ''}
+                            </label>
+                        `;
+                    }).join('')}
+                </div>
 
-                        <div class="mt-2 text-xs font-semibold">
-                            ${ booked ? '✓ BOOKED' :conflict ? '⚠ CONFLICT' :  subjectBooked ? '⚠ SAME SUBJECT BOOKED' : full ? 'FULL' : ''}
-                        </div>
+                <div class="mt-2 text-xs font-semibold">
+                    ${cardState.statusMessage}
+                </div>
             `;
-
-            if (booked) {
-                card.classList.add(...CARD_STATE_STYLE.booked.split(' '));
-            } else if (conflict) {
-                card.classList.add(...CARD_STATE_STYLE.booked.split(' '));
-            } else if (full) {
-                card.classList.add(...CARD_STATE_STYLE.full.split(' '));
-            } else {
-                card.classList.add('bg-white');
-            }
-
-            if (isDisabled) {
-                card.classList.add('disabled');
-            }
 
             return card;
         }
@@ -354,19 +353,15 @@
 
             const selectedSessionId = e.target.dataset.id;
 
+            // Uncheck other radios of the same session
             document.querySelectorAll('.booking-radio').forEach(radio => {
-                if (
-                    radio !== e.target &&
-                    radio.dataset.id === selectedSessionId
-                ) {
+                if (radio !== e.target && radio.dataset.id === selectedSessionId) {
                     radio.checked = false;
-                    radio.dataset.wasChecked = 'false';
                 }
             });
 
             updateSelectedSummary();
         }
-
 
         function updateSelectedSummary() {
             const radios = document.querySelectorAll('.booking-radio:checked');
@@ -381,14 +376,12 @@
 
             summary.classList.remove('hidden');
 
-            const selected = Array.from(radios).map(rb => {
-                return {
-                    id: rb.dataset.id,
-                    date: rb.dataset.date,
-                    subject: rb.dataset.subject,
-                    className: rb.dataset.classname
-                };
-            });
+            const selected = Array.from(radios).map(rb => ({
+                id: rb.dataset.id,
+                date: rb.dataset.date,
+                subject: rb.dataset.subject,
+                className: rb.dataset.classname
+            }));
 
             list.innerHTML = selected.map(s => `
                 <div class="py-1">• ${s.subject} (${s.className}) - ${new Date(s.date).toLocaleDateString()}</div>
@@ -401,18 +394,18 @@
             const el = document.getElementById('bookingsList');
             el.innerHTML = state.bookings.length ?
                 state.bookings.map(b => `
-            <div class="flex justify-between p-3 bg-gray-50 rounded mb-2">
-                <span>${b.class_session?.class_subject || ''} - ${b.class_session?.class_name} ${b.class_session?.start_time}T (${new Date(b.booking_date).toLocaleDateString()})</span>
-                <span class="text-xs bg-green-100 text-green-700 px-2 rounded">${b.status}</span>
-            </div>
-        `).join('') :
+                    <div class="flex justify-between p-3 bg-gray-50 rounded mb-2">
+                        <span>${b.class_session?.class_subject || ''} - ${b.class_session?.class_name} ${b.class_session?.start_time} (${new Date(b.booking_date).toLocaleDateString()})</span>
+                        <span class="text-xs bg-green-100 text-green-700 px-2 rounded">${b.status}</span>
+                    </div>
+                `).join('') :
                 '<p class="text-sm text-gray-500">No bookings yet</p>';
         }
 
         function showMessage(msg, type = 'error') {
             const el = document.getElementById('statusMsg');
             el.textContent = msg;
-            el.className = `mb-4 text-sm ${type==='success'?'text-green-600':'text-red-600'}`;
+            el.className = `mb-4 text-sm ${type === 'success' ? 'text-green-600' : 'text-red-600'}`;
             el.classList.remove('hidden');
             setTimeout(() => el.classList.add('hidden'), 3000);
         }
@@ -423,7 +416,6 @@
             renderTimetable();
             renderBookings();
 
-            // Add book button event listener
             const bookBtn = document.getElementById('bookBtn');
             if (bookBtn) {
                 bookBtn.onclick = async () => {

@@ -19,6 +19,19 @@
         .class-card:hover {
             transform: translateY(-2px);
         }
+
+        .class-card.disabled {
+            pointer-events: none;
+        }
+
+        .class-card.disabled:hover {
+            transform: none;
+        }
+
+        .booking-radio:disabled {
+            cursor: not-allowed;
+            opacity: 0.4;
+        }
     </style>
 </head>
 
@@ -85,11 +98,25 @@
             7: 'sunday'
         };
 
-        const COLORS = {
-            english: "bg-blue-500",
-            math: "bg-pink-500",
-            default: "bg-gray-500"
+        const ERROR_MESSAGES = {
+            3: 'already booked this class session on the selected date.',
+            8: 'same time slot is already booked.'
         };
+
+
+        const COLORS = {
+            english: "border-l-4 border-sky-400",
+            math: "border-l-4 border-rose-400",
+            science: "border-l-4 border-emerald-400",
+            default: "border-l-4 border-slate-300"
+        };
+
+        const CARD_STATE_STYLE = {
+            booked: 'bg-gray-200 opacity-60',
+            conflict: 'bg-yellow-50 opacity-60',
+            full: 'bg-gray-100 opacity-70'
+        };
+
 
         /* ================= NORMALIZE ================= */
         function normalizeDay(day) {
@@ -125,7 +152,11 @@
                     booking_date: date
                 })
             });
-            if (!res.ok) throw new Error((await res.json()).message);
+            if (!res.ok) {
+                const data = await res.json();
+                const msg = ERROR_MESSAGES[data.code] ?? data.message ?? 'Unknown error';
+                throw new Error(msg);
+            }
         }
 
         async function bookMultiple(bookings) {
@@ -148,11 +179,11 @@
         const subjectColor = s => COLORS[s?.toLowerCase()] || COLORS.default;
 
         const isBooked = id =>
-            state.bookings.some(b => b.class_session_id === id && b.status === 'confirmed');
+            state.bookings.some(b => b.class_session_id === id && b.status === 'CONFIRMED');
 
         function hasConflict(session) {
             return state.bookings.some(b => {
-                if (b.status !== 'confirmed') return false;
+                if (b.status !== 'CONFIRMED') return false;
                 const s = state.sessions.find(x => x.id === b.class_session_id);
                 if (!s) return false;
                 return normalizeDay(s.day_of_week) === normalizeDay(session.day_of_week) &&
@@ -180,6 +211,29 @@
         }
 
         /* ================= UI ================= */
+        document.querySelectorAll('.booking-radio').forEach(rb => {
+            rb.addEventListener('click', function() {
+                if (this.dataset.wasChecked === 'true') {
+                    this.checked = false;
+                    this.dataset.wasChecked = 'false';
+                    updateSelectedSummary();
+                } else {
+                    document.querySelectorAll('.booking-radio').forEach(r => {
+                        r.dataset.wasChecked = 'false';
+                    });
+                    this.dataset.wasChecked = 'true';
+                }
+            });
+
+            rb.addEventListener('change', handleRadioChange);
+        });
+
+        function isSessionAlreadyBooked(sessionId) {
+            return state.bookings.some(
+                b => b.class_session_id == sessionId && b.status === 'CONFIRMED'
+            );
+        }
+
         function createCard(session) {
             const booked = isBooked(session.id);
             const conflict = hasConflict(session);
@@ -187,45 +241,80 @@
 
             const bookedSubjects = new Set(
                 state.bookings
-                .filter(b => b.status === 'confirmed')
+                .filter(b => b.status === 'CONFIRMED')
                 .map(b => state.sessions.find(s => s.id === b.class_session_id)?.class_subject)
                 .filter(Boolean)
             );
             const subjectBooked = bookedSubjects.has(session.class_subject);
+            const isDisabled = booked || conflict || full;
 
             const card = document.createElement('div');
-            card.className = `class-card ${subjectColor(session.class_subject)} text-white rounded p-3 mb-2 text-sm`;
+            // card.className = `class-card ${subjectColor(session.class_subject)} text-white rounded p-3 mb-2 text-sm`;
+            card.className = `
+                    class-card text-gray-800 
+                    ${subjectColor(session.class_subject)}
+                    rounded p-3 mb-2 text-sm shadow-sm
+                `;
 
             const dates = nextDates(session);
             const bookedDates = state.bookings
-                .filter(b => b.class_session_id === session.id && b.status === 'confirmed')
+                .filter(b => b.class_session_id === session.id && b.status === 'CONFIRMED')
                 .map(b => b.booking_date);
+            const sessionBooked = isSessionAlreadyBooked(session.id);
 
             card.innerHTML = `
-        <div class="font-bold">${session.class_subject || 'Class'}</div>
-        <div class="text-xs opacity-80">${session.class_name}</div>
+                <div class="font-bold">${session.class_subject || 'Class'}</div>
+                <div class="text-xs opacity-80">${session.class_name}</div>
 
-        <div class="mt-2 text-xs space-y-1">
-            ${dates.map(d => {
-                const dateStr = d.toISOString().slice(0,10);
-                const bookedDatesSet = new Set(bookedDates);
-                const isDateBooked = bookedDatesSet.has(dateStr);
-                
-                return `
-                <label class="flex items-center gap-1">
-                    ${(!conflict && !full && !isDateBooked && !subjectBooked)
-                        ? `<input type="radio" name="session${session.id}" class="booking-radio" data-id="${session.id}" data-date="${dateStr}" data-subject="${session.class_subject || 'Class'}" data-classname="${session.class_name}">`
-                        : '<span class="w-4"></span>'}
-                    ${d.toLocaleDateString()}
-                    ${isDateBooked ? '<span class="ml-1 font-bold">✓</span>' : ''}
-                </label>
-            `}).join('')}
-        </div>
+                <div class="mt-2 text-xs space-y-1">
+                    ${dates.map(d => {
+                        const dateStr = d.toISOString().slice(0,10);
+                        const bookedDatesSet = new Set(bookedDates);
+                        const isDateBooked = bookedDatesSet.has(dateStr);
+                        
+                        return `
+                                <label class="flex items-center gap-1
+                                ${(!isDisabled && !isDateBooked && !sessionBooked)
+                                    ? `"><input 
+                                        type="radio"
+                                        name="session${session.id}"
+                                        class="booking-radio"
+                                        data-id="${session.id}"
+                                        data-date="${dateStr}"
+                                        data-subject="${session.class_subject || 'Class'}"
+                                        data-classname="${session.class_name}"
+                                    >`
+                                    : ` text-gray-400}"><input 
+                                        type="radio"
+                                        class="booking-radio"
+                                        disabled
+                                    >`
+                                }
+                                    ${d.toLocaleDateString()}
+                                    ${sessionBooked ? '<span class="ml-1 font-bold">✓</span>' : ''}
+                                </label>
+                            `}).join('')}
+                        </div>
 
-        <div class="mt-2 text-xs font-semibold">
-            ${subjectBooked ? '✓ SUBJECT BOOKED' : booked ? '✓ BOOKED' : full ? 'FULL' : conflict ? '⚠ CONFLICT' : ''}
-        </div>
-    `;
+                        <div class="mt-2 text-xs font-semibold">
+                            ${ booked ? '✓ BOOKED' :conflict ? '⚠ CONFLICT' :  subjectBooked ? '⚠ SAME SUBJECT BOOKED' : full ? 'FULL' : ''}
+                        </div>
+            `;
+
+            if (booked) {
+                card.classList.add(...CARD_STATE_STYLE.booked.split(' '));
+            } else if (conflict) {
+                card.classList.add(...CARD_STATE_STYLE.booked.split(' '));
+            } else if (full) {
+                card.classList.add(...CARD_STATE_STYLE.full.split(' '));
+            } else {
+                card.classList.add('bg-white');
+            }
+
+            if (isDisabled) {
+                card.classList.add('disabled');
+            }
+
             return card;
         }
 
@@ -263,16 +352,21 @@
         function handleRadioChange(e) {
             if (!e.target.checked) return;
 
-            const selectedSubject = e.target.dataset.subject;
+            const selectedSessionId = e.target.dataset.id;
 
             document.querySelectorAll('.booking-radio').forEach(radio => {
-                if (radio !== e.target && radio.dataset.subject === selectedSubject) {
+                if (
+                    radio !== e.target &&
+                    radio.dataset.id === selectedSessionId
+                ) {
                     radio.checked = false;
+                    radio.dataset.wasChecked = 'false';
                 }
             });
 
             updateSelectedSummary();
         }
+
 
         function updateSelectedSummary() {
             const radios = document.querySelectorAll('.booking-radio:checked');
@@ -308,7 +402,7 @@
             el.innerHTML = state.bookings.length ?
                 state.bookings.map(b => `
             <div class="flex justify-between p-3 bg-gray-50 rounded mb-2">
-                <span>${b.class_session?.class_subject || ''} - ${b.class_session?.class_name} (${b.booking_date})</span>
+                <span>${b.class_session?.class_subject || ''} - ${b.class_session?.class_name} ${b.class_session?.start_time}T (${new Date(b.booking_date).toLocaleDateString()})</span>
                 <span class="text-xs bg-green-100 text-green-700 px-2 rounded">${b.status}</span>
             </div>
         `).join('') :

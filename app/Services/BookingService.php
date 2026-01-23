@@ -26,7 +26,7 @@ class BookingService
     public function createBooking(Student $student, int $classSessionId, string $date): void
     {
         if ($this->hasActiveBookingForSession($student, $classSessionId)) {
-            throw new DomainException('ACTIVE_BOOKING_EXISTS');
+            throw new DomainException('ACTIVE_BOOKING_EXISTS', 3);
         }
 
         $classSession = ClassSession::findOrFail($classSessionId);
@@ -37,7 +37,7 @@ class BookingService
         $newEnd = $newStart->copy()->addMinutes($classSession->duration_min);
 
         if ($this->hasTimeConflict($student, $newStart, $newEnd)) {
-            throw new DomainException('TIME_CONFLICT');
+            throw new DomainException('TIME_CONFLICT', 8);
         }
 
         $status = $classSession->hasCapacity()

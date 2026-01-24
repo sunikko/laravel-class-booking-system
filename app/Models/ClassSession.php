@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Enums\BookingStatus;
+use Carbon\Carbon;
 
 class ClassSession extends Model
 {
@@ -13,9 +14,14 @@ class ClassSession extends Model
 
     protected $fillable = [
         'teacher_id',
+        'class_name',
+        'class_subject',
+        'start_date',
+        'end_date',
+        'day_of_week',
+        'start_time',
+        'duration_min',
         'max_students',
-        'start_at',
-        'end_at',
         'status',
     ];
     public function bookings()
@@ -52,5 +58,16 @@ class ClassSession extends Model
         $next->confirm();
     }
 
+    public function startDateTime(): Carbon
+    {
+        return Carbon::parse($this->start_date)
+            ->setTimeFromTimeString($this->start_time);
+    }
 
+    public function endDateTime(): Carbon
+    {
+        return $this->startDateTime()
+            ->copy()
+            ->addMinutes($this->duration_min);
+    }
 }

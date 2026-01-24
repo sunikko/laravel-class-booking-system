@@ -14,7 +14,14 @@ class BookingController extends Controller
      */
     public function index()
     {
-        //
+        $user = auth()->user();
+
+        if (! $user || ! $user->student) {
+            return response()->json([]);
+        }
+        return Booking::with('classSession')
+            ->where('student_id', $user->student->id)
+            ->get();
     }
 
     /**
@@ -32,17 +39,6 @@ class BookingController extends Controller
                 ], 403);
             }
 
-            if ($bookingService->hasActiveBooking($student)) {
-                return response()->json([
-                    'code' => 'ACTIVE_BOOKING_EXISTS',
-                ], 409);
-            }
-
-            $student = auth()->user()->student;
-            if (! $student) {
-                abort(403, 'Student profile not found');
-            }
-
             $bookingService->createBooking(
                 $student,
                 $request->input('class_session_id'),
@@ -52,7 +48,6 @@ class BookingController extends Controller
             return response()->json([
                 'message' => 'Booking created',
             ], Response::HTTP_CREATED);
-
         } catch (\DomainException $e) {
             return response()->json([
                 'code' => $e->getMessage(),

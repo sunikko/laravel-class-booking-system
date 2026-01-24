@@ -185,7 +185,7 @@
         /* ================= HELPERS ================= */
         const subjectColor = s => COLORS[s?.toLowerCase()] || COLORS.default;
 
-        // 통합된 예약 체크 함수 (날짜 옵션 포함)
+        // check if a session is already booked (optionally on a specific date)
         function isSessionBooked(sessionId, date = null) {
             return state.bookings.some(b =>
                 b.class_session_id == sessionId &&
@@ -194,7 +194,7 @@
             );
         }
 
-        // 같은 시간대에 다른 수업이 예약되어 있는지 체크
+        // check time conflict with existing bookings
         function hasConflict(session) {
             return state.bookings.some(b => {
                 if (b.status !== 'CONFIRMED') return false;
@@ -225,7 +225,7 @@
         }
 
         function getCardState(session) {
-            const anyDateBooked = isSessionBooked(session.id); // 아무 날짜든 예약되었는지
+            const anyDateBooked = isSessionBooked(session.id);
             const conflict = hasConflict(session);
             const full = session.booked_count >= session.max_students;
 
@@ -298,10 +298,13 @@
                                     ${canBook ? `
                                         data-id="${session.id}"
                                         data-date="${dateStr}"
+                                        data-day="${normalizeDay(session.day_of_week)}"
+                                        data-time="${normalizeTime(session.start_time)}"
                                         data-subject="${session.class_subject || 'Class'}"
                                         data-classname="${session.class_name}"
                                     ` : ''}
                                 >
+
                                 ${d.toLocaleDateString()}
                                 ${isThisDateBooked ? '<span class="ml-1 font-bold">✓</span>' : ''}
                             </label>
@@ -352,10 +355,21 @@
             if (!e.target.checked) return;
 
             const selectedSessionId = e.target.dataset.id;
+            const selectedDate = e.target.dataset.date;
+            const selectedTime = e.target.dataset.time;
 
             // Uncheck other radios of the same session
             document.querySelectorAll('.booking-radio').forEach(radio => {
                 if (radio !== e.target && radio.dataset.id === selectedSessionId) {
+                    radio.checked = false;
+                }
+            });
+
+            // Uncheck any other bookings at the same date and time
+            document.querySelectorAll('.booking-radio').forEach(radio => {
+                if (radio !== e.target &&
+                    radio.dataset.date === selectedDate &&
+                    radio.dataset.time === selectedTime) {
                     radio.checked = false;
                 }
             });

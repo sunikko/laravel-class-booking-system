@@ -43,11 +43,16 @@
 
         <!-- Selected Bookings Summary -->
         <div id="selectedSummary" class="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4 hidden">
-            <h3 class="font-semibold mb-2">Selected Bookings:</h3>
-            <div id="selectedList" class="text-sm mb-3"></div>
-            <button id="bookBtn" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
-                Book Selected Classes
-            </button>
+            <h3 class="font-semibold mb-3">Selected Bookings:</h3>
+            <div id="selectedList" class="text-sm mb-4 space-y-2"></div>
+            <div class="flex gap-2">
+                <button id="bookBtn" class="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition">
+                    Book Selected Classes
+                </button>
+                <button id="cancelAllBtn" class="bg-white text-red-600 border border-red-600 px-6 py-2 rounded hover:bg-red-50 transition">
+                    Cancel All
+                </button>
+            </div>
         </div>
 
         <div class="bg-white rounded-lg shadow overflow-x-auto">
@@ -397,9 +402,36 @@
                 className: rb.dataset.classname
             }));
 
-            list.innerHTML = selected.map(s => `
-                <div class="py-1">• ${s.subject} (${s.className}) - ${new Date(s.date).toLocaleDateString()}</div>
+            list.innerHTML = selected.map((s, index) => `
+                <div class="flex items-center justify-between py-2 px-3 bg-white rounded border border-blue-200">
+                    <span>• ${s.subject} (${s.className}) - ${new Date(s.date).toLocaleDateString()}</span>
+                    <button 
+                        class="remove-booking-btn text-red-600 hover:text-red-800 ml-4 text-xs px-2 py-1 border border-red-300 rounded hover:bg-red-50 transition"
+                        data-id="${s.id}"
+                        data-date="${s.date}"
+                    >
+                        Remove
+                    </button>
+                </div>
             `).join('');
+
+            // Add event listeners to remove buttons
+            document.querySelectorAll('.remove-booking-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const id = e.target.dataset.id;
+                    const date = e.target.dataset.date;
+
+                    // Remove from selected array
+                    document.querySelectorAll('.booking-radio').forEach(radio => {
+                        if (radio.dataset.id === id && radio.dataset.date === date) {
+                            radio.checked = false;
+                        }
+                    });
+
+                    // Update the summary
+                    updateSelectedSummary();
+                });
+            });
 
             state.selectedBookings = selected;
         }
@@ -445,6 +477,22 @@
 
                     state.selectedBookings = [];
                     await init();
+                };
+            }
+
+            const cancelAllBtn = document.getElementById('cancelAllBtn');
+            if (cancelAllBtn) {
+                cancelAllBtn.onclick = () => {
+                    // Uncheck all radio buttons
+                    document.querySelectorAll('.booking-radio:checked').forEach(radio => {
+                        radio.checked = false;
+                    });
+
+                    // Clear selected bookings
+                    state.selectedBookings = [];
+
+                    // Hide summary
+                    document.getElementById('selectedSummary').classList.add('hidden');
                 };
             }
         }

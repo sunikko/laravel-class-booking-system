@@ -172,7 +172,7 @@
         }
 
         async function bookMultiple(bookings) {
-            const errors = [];
+            const errorCodes = new Set();
             for (const {
                     id,
                     date
@@ -181,10 +181,13 @@
                 try {
                     await bookSession(id, date);
                 } catch (err) {
-                    errors.push(`${id}: ${err.message}`);
+                    if (err.message.includes('already booked')) errorCodes.add('duplicate');
+                    else if (err.message.includes('same time')) errorCodes.add('conflict');
+                    else errorCodes.add('unknown');
                 }
             }
-            return errors;
+
+            return Array.from(errorCodes);
         }
 
         /* ================= HELPERS ================= */
@@ -337,12 +340,17 @@
                     const td = document.createElement('td');
                     td.className = 'border p-2 align-top';
 
-                    state.sessions
-                        .filter(s =>
-                            normalizeDay(s.day_of_week) === day &&
-                            normalizeTime(s.start_time) === time
-                        )
-                        .forEach(s => td.appendChild(createCard(s)));
+                    const sessions = state.sessions.filter(s =>
+                        normalizeDay(s.day_of_week) === day &&
+                        normalizeTime(s.start_time) === time
+                    );
+
+                    if (sessions.length === 0) {
+                        td.innerHTML = `<p class="text-xs text-gray-400 italic">No class</p>`;
+                    } else {
+                        sessions.forEach(s => td.appendChild(createCard(s)));
+                    }
+
 
                     tr.appendChild(td);
                 });
@@ -467,17 +475,36 @@
                 bookBtn.onclick = async () => {
                     if (state.selectedBookings.length === 0) return;
 
-                    const errors = await bookMultiple(state.selectedBookings);
+                    bookBtn.disabled = true;
+                    const originalText = bookBtn.textContent;
+                    bookBtn.textContent = 'Booking...';
 
-                    if (errors.length === 0) {
-                        showMessage(`✓ Successfully booked ${state.selectedBookings.length} class(es)`, 'success');
-                    } else {
-                        showMessage(`Partial success. Errors: ${errors.join(', ')}`);
+                    try {
+                        const errors = await bookMultiple(state.selectedBookings);
+
+                        if (errors.length === 0) {
+                            showMessage(`✓ Successfully booked ${state.selectedBookings.length} class(es)`, 'success');
+                        } else {
+                            const messages = [];
+
+                            if (errors.includes('duplicate'))
+                                messages.push('Some classes were already booked');
+                            if (errors.includes('conflict'))
+                                messages.push('Some classes had time conflicts');
+                            if (errors.includes('unknown'))
+                                messages.push('Some bookings failed');
+
+                            showMessage(`Partial success. ${messages.join('. ')}`);
+                        }
+
+                        state.selectedBookings = [];
+                        await init();
+                    } finally {
+                        bookBtn.disabled = false;
+                        bookBtn.textContent = originalText;
                     }
-
-                    state.selectedBookings = [];
-                    await init();
                 };
+
             }
 
             const cancelAllBtn = document.getElementById('cancelAllBtn');

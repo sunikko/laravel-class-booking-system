@@ -14,7 +14,10 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/bookings', fn () => view('bookings.index'));
+    Route::get('/', function () {
+        return redirect()->route('bookings.index');
+    });
+    Route::get('/bookings', fn() => view('bookings.index'))->name('bookings.index');
 
     Route::get('/bookings/api', [BookingController::class, 'index']);
     Route::post('/bookings/api', [BookingController::class, 'store']);
@@ -28,8 +31,6 @@ Route::middleware('auth')->group(function () {
             ])->get()
         );
     });
-    
-
 });
 
 
@@ -39,4 +40,4 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

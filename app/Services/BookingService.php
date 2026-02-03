@@ -25,31 +25,33 @@ class BookingService
      */
     public function createBooking(Student $student, int $classSessionId, string $date): void
     {
-        if ($this->hasActiveBookingForSession($student, $classSessionId)) {
-            throw new DomainException('ACTIVE_BOOKING_EXISTS', 3);
-        }
+        DB::transaction(function () use ($student, $classSessionId, $date) {
+            if ($this->hasActiveBookingForSession($student, $classSessionId)) {
+                throw new DomainException('ACTIVE_BOOKING_EXISTS', 3);
+            }
 
-        $classSession = ClassSession::findOrFail($classSessionId);
+            $classSession = ClassSession::lockForUpdate()->findOrFail($classSessionId);
 
-        $newStart = Carbon::parse($classSession->start_date)
-            ->setTimeFromTimeString($classSession->start_time);
+            $newStart = Carbon::parse($classSession->start_date)
+                ->setTimeFromTimeString($classSession->start_time);
 
-        $newEnd = $newStart->copy()->addMinutes($classSession->duration_min);
+            $newEnd = $newStart->copy()->addMinutes($classSession->duration_min);
 
-        if ($this->hasTimeConflict($student, $newStart, $newEnd)) {
-            throw new DomainException('TIME_CONFLICT', 8);
-        }
+            if ($this->hasTimeConflict($student, $newStart, $newEnd)) {
+                throw new DomainException('TIME_CONFLICT', 8);
+            }
 
-        $status = $classSession->hasCapacity()
-            ? BookingStatus::CONFIRMED
-            : BookingStatus::WAITING;
+            $status = $classSession->hasCapacity()
+                ? BookingStatus::CONFIRMED
+                : BookingStatus::WAITING;
 
-        Booking::create([
-            'student_id' => $student->id,
-            'class_session_id' => $classSessionId,
-            'booking_date' => $date,
-            'status' => $status,
-        ]);
+            Booking::create([
+                'student_id' => $student->id,
+                'class_session_id' => $classSessionId,
+                'booking_date' => $date,
+                'status' => $status,
+            ]);
+        });
     }
 
     /**

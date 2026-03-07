@@ -145,3 +145,27 @@ stateDiagram-v2
     Cancelled --> [*]
 
 ```
+
+---
+
+## Screenshots
+
+#### 1. Timetable with availability indicators
+![Timetable](docs/screenshot/timetable.png)
+The timetable visualises booking availability directly in the UI.
+
+- Booked classes are marked
+- Conflicts are highlighted
+- Warnings are shown when the same subject is already booked
+
+This helps users understand availability before submitting a booking.
+
+#### 2. Booking Review Panel
+![Booking Review](docs/screenshot/review.png)
+Selected classes are displayed in a review panel before submission.
+This allows users to quickly verify and modify their selections without navigating away from the page.
+
+#### 3. My Bookings
+![My Bookings](docs/screenshot/mybookings.png)
+Users can view their confirmed bookings in a dedicated section, providing clear feedback after the booking process.
+

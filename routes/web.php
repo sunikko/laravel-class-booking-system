@@ -6,6 +6,9 @@ use App\Http\Controllers\BookingController;
 use App\Models\ClassSession;
 
 Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('bookings.index');
+    }
     return view('welcome');
 });
 
@@ -14,9 +17,9 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/', function () {
-        return redirect()->route('bookings.index');
-    });
+    // Route::get('/', function () {
+    //     return redirect()->route('bookings.index');
+    // });
     Route::get('/bookings', fn() => view('bookings.index'))->name('bookings.index');
 
     Route::get('/bookings/api', [BookingController::class, 'index']);

@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Services\BookingService;
 use App\Models\Booking;
+use App\DataTransferObjects\BookingData;
+
 
 class BookingController extends Controller
 {
@@ -22,6 +24,17 @@ class BookingController extends Controller
         return Booking::with('classSession')
             ->where('student_id', $user->student->id)
             ->get();
+        // Eager load classSession for the DTO
+        $bookings = Booking::with('classSession') // Make sure 'classSession' relationship is loaded
+            ->where('student_id', $user->student->id)
+            ->get();
+
+        // You will need a BookingData DTO to transform this collection
+        // Assuming you have already created app/DataTransferObjects/BookingData.php
+        // and it uses ClassSessionData internally for the classSession relationship.
+        $bookingData = BookingData::fromCollection($bookings);
+
+        return response()->json($bookingData);
     }
 
     /**

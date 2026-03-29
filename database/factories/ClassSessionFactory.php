@@ -19,7 +19,6 @@ class ClassSessionFactory extends Factory
 
 
         $startTimes = [
-            '09:00',
             '10:00',
             '11:00',
             '13:00',
@@ -29,6 +28,7 @@ class ClassSessionFactory extends Factory
         ];
 
         return [
+            'teacher_id' => 1,  // Temporarily set teacher_id to a dummy value
             'class_name' => $this->faker->randomElement(['Tom', 'Jake', 'Chris', 'Anna', 'Jane']) . "'s Class",
             'class_subject' => $this->faker->randomElement(['Math', 'English', 'Science']),
 

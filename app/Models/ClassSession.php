@@ -29,7 +29,6 @@ class ClassSession extends Model
     protected $casts = [
         'start_date' => 'date', // Casts to Carbon instance
         'end_date' => 'date',   // Casts to Carbon instance
-        'start_time' => 'datetime', // Casts to Carbon instance or you can keep it as string
         'status' => BookingStatus::class,
     ];
 

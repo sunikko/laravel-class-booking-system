@@ -3,9 +3,9 @@
 namespace Database\Factories;
 
 use App\Models\ClassSession;
-use App\Models\Teacher;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Carbon\Carbon;
+use App\Enums\BookingStatus;
 
 class ClassSessionFactory extends Factory
 {
@@ -40,7 +40,7 @@ class ClassSessionFactory extends Factory
             'start_time' => $this->faker->randomElement($startTimes),
             'duration_min' => 60,
             'max_students' => $this->faker->numberBetween(3, 8),
-            'status' => 'active',
+            'status' => BookingStatus::CONFIRMED,
         ];
     }
 }

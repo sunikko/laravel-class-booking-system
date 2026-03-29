@@ -27,14 +27,6 @@ Route::middleware('auth')->group(function () {
     Route::post('/bookings/api', [BookingController::class, 'store']);
 
     Route::get('/bookings/sessions', function () {
-        return response()->json(
-            ClassSession::withCount([
-                'bookings as booked_count' => function ($q) {
-                    $q->where('status', 'confirmed');
-                }
-            ])->get()
-        );
-
         $classSessions = ClassSession::withCount([
             'bookings as booked_count' => function ($q) {
                 $q->where('status', 'confirmed');

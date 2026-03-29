@@ -1,4 +1,3 @@
-// app/DataTransferObjects/ClassSessionData.php
 <?php
 
 namespace App\DataTransferObjects;

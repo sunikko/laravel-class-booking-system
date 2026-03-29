@@ -55,7 +55,7 @@ class ClassSessionData
             'start_date' => $this->start_date->format('Y-m-d'),
             'end_date' => $this->end_date->format('Y-m-d'),
             'day_of_week' => $this->day_of_week,
-            'start_time' => $this->start_time, // Or $this->startDateTime()->format('H:i') if you want to rely on the model method
+            'start_time' => $this->start_time->format('H:i'), // $this->start_time Or $this->startDateTime()->format('H:i') if you want to rely on the model method
             'duration_min' => $this->duration_min,
             'max_students' => $this->max_students,
             'booked_count' => $this->booked_count,

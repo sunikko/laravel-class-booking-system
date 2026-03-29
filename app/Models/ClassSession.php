@@ -24,6 +24,14 @@ class ClassSession extends Model
         'max_students',
         'status',
     ];
+
+    // THIS IS WHERE YOU DEFINE DATE CASTS
+    protected $casts = [
+        'start_date' => 'date', // Casts to Carbon instance
+        'end_date' => 'date',   // Casts to Carbon instance
+        'status' => BookingStatus::class,
+    ];
+
     public function bookings()
     {
         return $this->hasMany(Booking::class);

@@ -1,5 +1,6 @@
 <?php
 
+use App\DataTransferObjects\ClassSessionData;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BookingController;
@@ -26,13 +27,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/bookings/api', [BookingController::class, 'store']);
 
     Route::get('/bookings/sessions', function () {
-        return response()->json(
-            ClassSession::withCount([
-                'bookings as booked_count' => function ($q) {
-                    $q->where('status', 'confirmed');
-                }
-            ])->get()
-        );
+        $classSessions = ClassSession::withCount([
+            'bookings as booked_count' => function ($q) {
+                $q->where('status', 'confirmed');
+            }
+        ])->get();
+
+        // Use the DTO to transform the collection
+        // Ensure ClassSessionData::fromCollection correctly maps the fetched models
+        $sessionData = ClassSessionData::fromCollection($classSessions);
+
+        return response()->json($sessionData);
     });
 });
 

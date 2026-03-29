@@ -3,9 +3,9 @@
 namespace Database\Factories;
 
 use App\Models\ClassSession;
-use App\Models\Teacher;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Carbon\Carbon;
+use App\Enums\BookingStatus;
 
 class ClassSessionFactory extends Factory
 {
@@ -19,7 +19,6 @@ class ClassSessionFactory extends Factory
 
 
         $startTimes = [
-            '09:00',
             '10:00',
             '11:00',
             '13:00',
@@ -29,6 +28,7 @@ class ClassSessionFactory extends Factory
         ];
 
         return [
+            'teacher_id' => 1,  // Temporarily set teacher_id to a dummy value
             'class_name' => $this->faker->randomElement(['Tom', 'Jake', 'Chris', 'Anna', 'Jane']) . "'s Class",
             'class_subject' => $this->faker->randomElement(['Math', 'English', 'Science']),
 
@@ -40,7 +40,7 @@ class ClassSessionFactory extends Factory
             'start_time' => $this->faker->randomElement($startTimes),
             'duration_min' => 60,
             'max_students' => $this->faker->numberBetween(3, 8),
-            'status' => 'active',
+            'status' => BookingStatus::CONFIRMED,
         ];
     }
 }

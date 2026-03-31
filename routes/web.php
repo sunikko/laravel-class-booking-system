@@ -31,26 +31,7 @@ Route::middleware('auth')->group(function () {
 
 // Booking React Page Route
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/bookings', function () {
-        $classSessions = ClassSession::withCount([
-            'bookings as booked_count' => function ($q) {
-                $q->where('status', 'confirmed');
-            }
-        ])->get();
-        Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
-
-        $sessionData = ClassSessionData::fromCollection($classSessions);
-
-        // 사용자의 Student 정보를 먼저 가져온 뒤, 예약 내역을 가져옵니다.
-        $student = auth()->user()->student;
-        $bookings = $student ? $student->bookings()->with('classSession')->get() : collect();
-
-        return Inertia::render('Bookings/Index', [
-            'sessions' => $sessionData,
-            'bookings' => $bookings
-        ]);
-    })->name('bookings.index');
-
+    Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
     Route::post('/bookings', [BookingController::class, 'store']);
 });
 

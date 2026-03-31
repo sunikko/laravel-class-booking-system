@@ -107,6 +107,25 @@ export default function Index({ auth, sessions = [], bookings = [] }) {
         setIsBooking(false);
     };
 
+    // Cancel Booking Logic
+    const handleCancelBooking = async (bookingId) => {
+        if (!confirm('Are you sure you want to cancel this booking?')) {
+            return;
+        }
+
+        try {
+            const response = await axios.delete(`/bookings/${bookingId}`);
+            if (response.status === 204 || response.status === 200) {
+                showMessage('Booking successfully cancelled.', 'success');
+                // Reload only specific data props from the server to update the UI
+                router.reload({ only: ['sessions', 'bookings'] });
+            }
+        } catch (err) {
+            const msg = err.response?.status === 403 ? 'Permission denied.' : 'Failed to cancel booking.';
+            showMessage(msg, 'error');
+        }
+    };
+
     // State Checks
     const isSessionBooked = (sessionId, date = null) => {
         return bookings.some(b => b.class_session_id == sessionId && b.status?.toLowerCase() === 'confirmed' && (!date || b.booking_date === date));
@@ -255,7 +274,18 @@ export default function Index({ auth, sessions = [], bookings = [] }) {
                                 bookings.map(b => (
                                     <div key={b.id} className="flex justify-between items-center p-3 bg-gray-50 rounded border">
                                         <span className="text-sm">{b.class_session?.class_subject || ''} - {b.class_session?.class_name} {b.class_session?.start_time} ({new Date(b.booking_date).toLocaleDateString()})</span>
-                                        <span className="text-xs bg-green-100 text-green-700 px-2 py-1 font-semibold rounded uppercase">{b.status}</span>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xs bg-green-100 text-green-700 px-2 py-1 font-semibold rounded uppercase">{b.status}</span>
+                                            {/* Show cancel button only if status is confirmed or waiting */}
+                                            {(b.status?.toLowerCase() === 'confirmed' || b.status?.toLowerCase() === 'waiting') && (
+                                                <button
+                                                    onClick={() => handleCancelBooking(b.id)}
+                                                    className="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-2 py-1 font-semibold rounded transition"
+                                                >
+                                                    Cancel
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
                                 ))
                             )}

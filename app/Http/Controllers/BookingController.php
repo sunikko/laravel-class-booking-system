@@ -7,6 +7,7 @@ use Illuminate\Http\Response;
 use App\Services\BookingService;
 use App\Models\Booking;
 use App\DataTransferObjects\BookingData;
+use App\Http\Requests\StoreBookingRequest;
 use Inertia\Inertia;
 
 class BookingController extends Controller
@@ -29,22 +30,13 @@ class BookingController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request, BookingService $bookingService)
+    public function store(StoreBookingRequest $request, BookingService $bookingService)
     {
         try {
-            $user = auth()->user();
-            $student = $user->student;
-
-            if (! $student) {
-                return response()->json([
-                    'code' => 'STUDENT_NOT_FOUND',
-                ], 403);
-            }
-
             $bookingService->createBooking(
-                $student,
-                $request->input('class_session_id'),
-                $request->input('booking_date')
+                $request->user(),
+                $request->validated('class_session_id'),
+                $request->validated('booking_date')
             );
 
             return response()->json([

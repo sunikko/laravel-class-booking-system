@@ -36,7 +36,7 @@ class BookingService
     /**
      * Creates a new booking for a student if no active booking exists.
      *
-     * @param Student $student The student making the booking.
+     * @param User $user The user making the booking.
      * @param int $classSessionId The ID of the class session to book.
      * @param string $date The date of the booking.
      *
@@ -44,9 +44,10 @@ class BookingService
      *
      * @return void
      */
-    public function createBooking(Student $student, int $classSessionId, string $date): void
+    public function createBooking(User $user, int $classSessionId, string $date): void
     {
-        DB::transaction(function () use ($student, $classSessionId, $date) {
+        DB::transaction(function () use ($user, $classSessionId, $date) {
+            $student = $user->student;
             if ($this->hasActiveBookingForSession($student, $classSessionId)) {
                 throw new DomainException('ACTIVE_BOOKING_EXISTS', 3);
             }

@@ -54,7 +54,8 @@ class BookingService
 
             $classSession = ClassSession::lockForUpdate()->findOrFail($classSessionId);
 
-            $newStart = Carbon::parse($classSession->start_date)
+            // Fix: Use the requested booking $date instead of the session's base start_date
+            $newStart = Carbon::parse($date)
                 ->setTimeFromTimeString($classSession->start_time);
 
             $newEnd = $newStart->copy()->addMinutes($classSession->duration_min);
@@ -143,6 +144,7 @@ class BookingService
     ): bool {
         $bookings = Booking::with('classSession')
             ->where('student_id', $student->id)
+            ->where('booking_date', $newStart->toDateString()) // Optimization: Only fetch bookings for the specific date
             ->whereIn('status', [
                 BookingStatus::CONFIRMED,
                 BookingStatus::WAITING,

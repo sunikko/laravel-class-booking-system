@@ -72,7 +72,7 @@ This decision simplifies state management and ensures booking consistency.
 ## Technology Stack
 
 -   Backend: Laravel
--   Frontend: Blade + JavaScript
+-   Frontend: React + Inertia.js + Tailwind CSS
 -   Database:
     -   SQLite (development & automated tests)
     -   MySQL (production-oriented design)
@@ -167,5 +167,6 @@ This allows users to quickly verify and modify their selections without navigati
 
 #### 3. My Bookings
 ![My Bookings](docs/screenshot/mybookings.png)
+![My Bookings - Cancelled](docs/screenshot/mybookings_cancelled.png)
 Users can view their confirmed bookings in a dedicated section, providing clear feedback after the booking process.
-
+They can also directly cancel their existing bookings (with status 'confirmed' or 'waiting') from this list.

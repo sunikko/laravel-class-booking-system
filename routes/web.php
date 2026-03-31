@@ -1,51 +1,39 @@
 <?php
 
-use App\DataTransferObjects\ClassSessionData;
 use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\BookingController;
+use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 use App\Models\ClassSession;
+use App\DataTransferObjects\ClassSessionData;
+use Illuminate\Http\Request;
+use App\Enums\BookingStatus;
 
 Route::get('/', function () {
-    if (auth()->check()) {
-        return redirect()->route('bookings.index');
-    }
-    return view('welcome');
+    return Inertia::render('Welcome', [
+        'canLogin' => Route::has('login'),
+        'canRegister' => Route::has('register'),
+        'laravelVersion' => Application::VERSION,
+        'phpVersion' => PHP_VERSION,
+    ]);
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard');
+    return Inertia::render('Dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
-
-Route::middleware('auth')->group(function () {
-    // Route::get('/', function () {
-    //     return redirect()->route('bookings.index');
-    // });
-    Route::get('/bookings', fn() => view('bookings.index'))->name('bookings.index');
-
-    Route::get('/bookings/api', [BookingController::class, 'index']);
-    Route::post('/bookings/api', [BookingController::class, 'store']);
-
-    Route::get('/bookings/sessions', function () {
-        $classSessions = ClassSession::withCount([
-            'bookings as booked_count' => function ($q) {
-                $q->where('status', 'confirmed');
-            }
-        ])->get();
-
-        // Use the DTO to transform the collection
-        // Ensure ClassSessionData::fromCollection correctly maps the fetched models
-        $sessionData = ClassSessionData::fromCollection($classSessions);
-
-        return response()->json($sessionData);
-    });
-});
-
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+// Booking React Page Route
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/bookings', [BookingController::class, 'index'])->name('bookings.index');
+    Route::post('/bookings', [BookingController::class, 'store']);
+    Route::delete('/bookings/{booking}', [BookingController::class, 'destroy'])->name('bookings.destroy');
 });
 
 require __DIR__ . '/auth.php';

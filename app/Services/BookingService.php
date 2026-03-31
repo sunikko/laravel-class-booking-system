@@ -6,16 +6,37 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Booking;
 use App\Models\ClassSession;
 use App\Models\Student;
+use App\Models\User;
+use App\DataTransferObjects\ClassSessionData;
 use App\Enums\BookingStatus;
 use DomainException;
 use Carbon\Carbon;
 
 class BookingService
 {
+    public function getIndexData(?User $user): array
+    {
+        $classSessions = ClassSession::withCount([
+            'bookings as booked_count' => function ($q) {
+                $q->where('status', 'confirmed');
+            }
+        ])->get();
+
+        $sessionData = ClassSessionData::fromCollection($classSessions);
+
+        $student = $user ? $user->student : null;
+        $bookings = $student ? $student->bookings()->with('classSession')->get() : collect();
+
+        return [
+            'sessions' => $sessionData,
+            'bookings' => $bookings
+        ];
+    }
+
     /**
      * Creates a new booking for a student if no active booking exists.
      *
-     * @param Student $student The student making the booking.
+     * @param User $user The user making the booking.
      * @param int $classSessionId The ID of the class session to book.
      * @param string $date The date of the booking.
      *
@@ -23,9 +44,10 @@ class BookingService
      *
      * @return void
      */
-    public function createBooking(Student $student, int $classSessionId, string $date): void
+    public function createBooking(User $user, int $classSessionId, string $date): void
     {
-        DB::transaction(function () use ($student, $classSessionId, $date) {
+        DB::transaction(function () use ($user, $classSessionId, $date) {
+            $student = $user->student;
             if ($this->hasActiveBookingForSession($student, $classSessionId)) {
                 throw new DomainException('ACTIVE_BOOKING_EXISTS', 3);
             }

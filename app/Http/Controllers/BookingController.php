@@ -7,55 +7,36 @@ use Illuminate\Http\Response;
 use App\Services\BookingService;
 use App\Models\Booking;
 use App\DataTransferObjects\BookingData;
-
+use App\Http\Requests\StoreBookingRequest;
+use Inertia\Inertia;
 
 class BookingController extends Controller
 {
     /**
      * Display a listing of the resource.
+     * 1. retrieve data using the service layer
+     * 2. return JSON response if it's an API request, otherwise render Inertia view for web requests
      */
-    public function index()
+    public function index(Request $request, BookingService $bookingService)
     {
-        $user = auth()->user();
+        $data = $bookingService->getIndexData($request->user());
 
-        if (! $user || ! $user->student) {
-            return response()->json([]);
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json($data);
         }
-        return Booking::with('classSession')
-            ->where('student_id', $user->student->id)
-            ->get();
-        // Eager load classSession for the DTO
-        $bookings = Booking::with('classSession') // Make sure 'classSession' relationship is loaded
-            ->where('student_id', $user->student->id)
-            ->get();
-
-        // You will need a BookingData DTO to transform this collection
-        // Assuming you have already created app/DataTransferObjects/BookingData.php
-        // and it uses ClassSessionData internally for the classSession relationship.
-        $bookingData = BookingData::fromCollection($bookings);
-
-        return response()->json($bookingData);
+        return Inertia::render('Bookings/Index', $data);
     }
 
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request, BookingService $bookingService)
+    public function store(StoreBookingRequest $request, BookingService $bookingService)
     {
         try {
-            $user = auth()->user();
-            $student = $user->student;
-
-            if (! $student) {
-                return response()->json([
-                    'code' => 'STUDENT_NOT_FOUND',
-                ], 403);
-            }
-
             $bookingService->createBooking(
-                $student,
-                $request->input('class_session_id'),
-                $request->input('booking_date')
+                $request->user(),
+                $request->validated('class_session_id'),
+                $request->validated('booking_date')
             );
 
             return response()->json([

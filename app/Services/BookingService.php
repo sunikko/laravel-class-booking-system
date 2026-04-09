@@ -44,34 +44,61 @@ class BookingService
      *
      * @return void
      */
+    /**
+     * Creates a new booking for a student.
+     * This method is transactional to ensure atomicity and consistency.
+     *
+     * @param User $user The user making the booking.
+     * @param int $classSessionId The ID of the class session to book.
+     * @param string $date The date of the booking.
+     *
+     * @throws \DomainException If an active booking already exists for the student,
+     *                          or if there's a time conflict, or if the session is invalid.
+     *
+     * @return void
+     */
     public function createBooking(User $user, int $classSessionId, string $date): void
     {
+        // Wrap the entire operation in a database transaction.
+        // This ensures that if any part fails, the entire operation is rolled back,
+        // maintaining data integrity.
         DB::transaction(function () use ($user, $classSessionId, $date) {
             $student = $user->student;
+
+            // Pre-condition check: Ensure the student doesn't have an active booking already.
+            // This is a critical business rule enforced before proceeding.
             if ($this->hasActiveBookingForSession($student, $classSessionId)) {
                 throw new DomainException('ACTIVE_BOOKING_EXISTS', 3);
             }
 
+            // Lock the class session row for the duration of the transaction.
+            // This prevents other concurrent requests from modifying the session's capacity
+            // while we are evaluating it. Essential for concurrency control.
             $classSession = ClassSession::lockForUpdate()->findOrFail($classSessionId);
 
-            // Fix: Use the requested booking $date instead of the session's base start_date
+            // Construct the exact start and end times for the potential new booking
+            // using the provided date and the session's time/duration.
             $newStart = Carbon::parse($date)
                 ->setTimeFromTimeString($classSession->start_time);
 
             $newEnd = $newStart->copy()->addMinutes($classSession->duration_min);
 
+            // Check for time conflicts with the student's existing confirmed or waiting bookings.
             if ($this->hasTimeConflict($student, $newStart, $newEnd)) {
                 throw new DomainException('TIME_CONFLICT', 8);
             }
 
+            // Determine the booking status based on current capacity.
+            // This logic is part of the core business rules and is evaluated within the transaction.
             $status = $classSession->hasCapacity()
                 ? BookingStatus::CONFIRMED
                 : BookingStatus::WAITING;
 
+            // Create the booking record. This is the final write operation within the transaction.
             Booking::create([
                 'student_id' => $student->id,
                 'class_session_id' => $classSessionId,
-                'booking_date' => $date,
+                'booking_date' => $date, // Use the provided booking date
                 'status' => $status,
             ]);
         });

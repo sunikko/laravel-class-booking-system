@@ -111,7 +111,6 @@ This project focuses on design-first implementation and iterative refinement.
 
 ## [Booking Status Lifecycle](docs/diagrams/booking-state.md)
 
-- `Pending` — initial state on submission
 - `Confirmed` — capacity was available
 - `Waiting` — session was full at time of booking
 - `Cancelled` — student cancelled (from confirmed or waiting)

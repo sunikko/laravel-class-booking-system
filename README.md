@@ -93,16 +93,31 @@ These integrations are documented but not fully implemented in this refactored v
 This project focuses on design-first implementation and iterative refinement.
 
 ---
-
 ## [Booking Flow](docs/diagrams/booking-flow.md)
 
-This section outlines the typical flow a student follows when making a booking. It begins with the student accessing the booking page, checking for existing bookings, filtering available sessions, selecting classes, reviewing their choices, and finally submitting the booking. The system then determines if the booking is confirmed or placed on a waiting list based on session capacity, followed by notifications. For a detailed visual representation, please refer to the [Booking Flow Diagram](docs/diagrams/booking-flow.md).
+- Student accesses the booking page
+- System checks for an existing active booking — if found, prompts cancellation first
+- Student filters available sessions by subject, centre, and date range (2-week window)
+- Student selects sessions — validation enforces no time overlaps and no duplicate subjects
+- Student reviews and submits the booking
+- System checks capacity:
+  - **Available** → booking confirmed
+  - **Full** → placed on waiting list
+- Notifications sent in both cases
+
+→ [View Booking Flow Diagram](docs/diagrams/booking-flow.md)
 
 ---
 
 ## [Booking Status Lifecycle](docs/diagrams/booking-state.md)
 
-A booking entity transitions through several states during its lifecycle. The primary states include `Pending` (initial submission), `Confirmed` (capacity available), `Waiting` (capacity full), and `Cancelled`. The status transitions are driven by system logic (capacity checks) and user actions (cancellation). For a comprehensive view of these state transitions, please refer to the [Booking Status Lifecycle Diagram](docs/diagrams/booking-state.md).
+- `Pending` — initial state on submission
+- `Confirmed` — capacity was available
+- `Waiting` — session was full at time of booking
+- `Cancelled` — student cancelled (from confirmed or waiting)
+- Transitions driven by system logic (capacity checks) and student actions (cancellation)
+
+→ [View Booking Status Lifecycle Diagram](docs/diagrams/booking-state.md)
 
 ---
 

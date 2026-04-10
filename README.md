@@ -96,55 +96,13 @@ This project focuses on design-first implementation and iterative refinement.
 
 ## [Booking Flow](docs/diagrams/booking-flow.md)
 
-```mermaid
-flowchart TD
-    A[Student enters booking page] --> B{Has active booking?}
-
-    B -- Yes --> C[Prompt to cancel existing booking]
-    C --> A
-
-    B -- No --> D[View and filter class sessions<hr/>
-    Subject, Center, Date range: 2 weeks]
-
-    D --> E[Select class sessions<hr/>
-    Validation applied:<br/>
-    No time overlap<br/>
-    No duplicate subject]
-
-    E --> F[Review booking]
-    F --> G[Submit booking]
-
-    G --> H{Capacity available?}
-
-    H -- Yes --> I[Create booking: confirmed]
-    H -- No --> J[Create booking: waiting]
-
-    I --> K[Send notifications]
-    J --> K
-
-    K --> L[End]
-
-```
+This section outlines the typical flow a student follows when making a booking. It begins with the student accessing the booking page, checking for existing bookings, filtering available sessions, selecting classes, reviewing their choices, and finally submitting the booking. The system then determines if the booking is confirmed or placed on a waiting list based on session capacity, followed by notifications. For a detailed visual representation, please refer to the [Booking Flow Diagram](docs/diagrams/booking-flow.md).
 
 ---
 
 ## [Booking Status Lifecycle](docs/diagrams/booking-state.md)
 
-This document describes the lifecycle and state transitions of a booking entity.
-
-```mermaid
-stateDiagram-v2
-    [*] --> Pending : Submit booking
-
-    Pending --> Confirmed : Capacity available
-    Pending --> Waiting : Capacity full
-
-    Confirmed --> Cancelled : Student cancels booking
-    Waiting --> Cancelled : Student cancels booking
-
-    Cancelled --> [*]
-
-```
+A booking entity transitions through several states during its lifecycle. The primary states include `Pending` (initial submission), `Confirmed` (capacity available), `Waiting` (capacity full), and `Cancelled`. The status transitions are driven by system logic (capacity checks) and user actions (cancellation). For a comprehensive view of these state transitions, please refer to the [Booking Status Lifecycle Diagram](docs/diagrams/booking-state.md).
 
 ---
 
